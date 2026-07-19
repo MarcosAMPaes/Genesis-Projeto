@@ -4,7 +4,7 @@ import argparse
 import json
 from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 import cv2
 import numpy as np
@@ -29,13 +29,23 @@ from petra.calibration.validation import (
     validate_dimensions,
     write_dimensional_report,
 )
-from petra.contracts import AutoPrompt, CalibProfile, SessionMeta
+from petra.contracts import (
+    AutoPrompt,
+    BoxPrompt,
+    CalibProfile,
+    PointsPrompt,
+    PromptPoint,
+    PromptSpec,
+    SessionMeta,
+)
 from petra.errors import ErrorCode, PetraError
 from petra.segmentation.adapters import (
     BiRefNetSegmenter,
     ChromaSegmenter,
+    Sam2Segmenter,
     Segmenter,
     TransformersBiRefNetRuntime,
+    TransformersSam2Runtime,
 )
 from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
 from petra.segmentation.postprocess import postprocess_instances
@@ -173,6 +183,28 @@ def _models_verify(args: argparse.Namespace) -> int:
         return 2
 
 
+def _segment_prompt(args: argparse.Namespace) -> PromptSpec:
+    if args.point and args.box:
+        raise ValueError("use points or box, not both")
+    if args.point:
+        points: list[PromptPoint] = []
+        for x_value, y_value, label_value in args.point:
+            if label_value not in {0.0, 1.0}:
+                raise ValueError("point label must be 0 or 1")
+            points.append(
+                PromptPoint(
+                    point=(float(x_value), float(y_value)),
+                    label=cast(Literal[0, 1], int(label_value)),
+                )
+            )
+        return PointsPrompt(points=tuple(points))
+    if args.box:
+        return BoxPrompt(
+            box=cast(tuple[float, float, float, float], tuple(float(v) for v in args.box))
+        )
+    return AutoPrompt()
+
+
 def _segment_run(args: argparse.Namespace) -> int:
     try:
         registry = ModelRegistry.from_json(Path(args.registry))
@@ -190,6 +222,11 @@ def _segment_run(args: argparse.Namespace) -> int:
                 str(registry.weights_path(args.backend).parent), device=device
             )
             segmenter = BiRefNetSegmenter(entry.descriptor, runtime)
+        elif entry.descriptor.family == "sam2":
+            sam2_runtime = TransformersSam2Runtime(
+                str(registry.weights_path(args.backend).parent), device=device
+            )
+            segmenter = Sam2Segmenter(entry.descriptor, sam2_runtime)
         else:
             raise PetraError(
                 ErrorCode.MODEL_UNAVAILABLE,
@@ -201,7 +238,7 @@ def _segment_run(args: argparse.Namespace) -> int:
             if args.marker_mask
             else None
         )
-        predictions = segmenter.segment(image_rgb, AutoPrompt())
+        predictions = segmenter.segment(image_rgb, _segment_prompt(args))
         processed = postprocess_instances(
             [prediction.mask for prediction in predictions],
             scale_mm_px=session.output_gsd_mm_px,
@@ -328,6 +365,17 @@ def build_parser() -> argparse.ArgumentParser:
     segment_run.add_argument("--backend", default="chroma")
     segment_run.add_argument("--device", choices=["auto", "cpu", "mps", "cuda"], default="auto")
     segment_run.add_argument("--registry", default="config/models/registry.json")
+    segment_run.add_argument(
+        "--point",
+        nargs=3,
+        action="append",
+        type=float,
+        metavar=("X", "Y", "LABEL"),
+        help="ponto em pixels e rotulo 0/1; repetivel",
+    )
+    segment_run.add_argument(
+        "--box", nargs=4, type=float, metavar=("X_MIN", "Y_MIN", "X_MAX", "Y_MAX")
+    )
     segment_run.add_argument("--marker-mask")
     segment_run.add_argument("--output-dir", required=True)
     segment_run.set_defaults(handler=_segment_run)

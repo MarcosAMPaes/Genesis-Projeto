@@ -10,6 +10,11 @@
       "component": "ZhengPeng7/BiRefNet@f6b715597b3bd22a03b2472ba81791dcbced6746",
       "spdx": "MIT",
       "scope": "automatic segmentation candidate; transitive audit required by model workflow"
+    },
+    {
+      "component": "facebook/sam2.1-hiera-small@ee5bba1d82bb8749febdf90f45e84b687142ba03",
+      "spdx": "Apache-2.0",
+      "scope": "promptable segmentation candidate; transitive audit required by model workflow"
     }
   ]
 }

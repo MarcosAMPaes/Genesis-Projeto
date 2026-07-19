@@ -33,6 +33,7 @@ seg-birefnet = [
 seg-sam2 = [
   "torch>=2.7",
   "torchvision>=0.22",
+  "transformers>=4.53,<6",
 ]
 seg-sam3 = [
   "huggingface-hub>=0.33,<2",

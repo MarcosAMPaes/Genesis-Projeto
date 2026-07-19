@@ -28,6 +28,20 @@
         "precision": "float32"
       },
       "weights_path": "../../weights/birefnet/model.safetensors"
+    },
+    {
+      "descriptor": {
+        "schema_version": "1.0.0",
+        "name": "sam2.1-hiera-small",
+        "family": "sam2",
+        "revision": "hf:ee5bba1d82bb8749febdf90f45e84b687142ba03",
+        "weights_sha256": "0a4067b11ce1e23d5229203f11c718a823060d15a4b23fa2372a7d4b77cbbc60",
+        "license_spdx": "Apache-2.0",
+        "license_approved": true,
+        "supported_devices": ["mps", "cuda"],
+        "precision": "float32"
+      },
+      "weights_path": "../../weights/sam2/model.safetensors"
     }
   ]
 }

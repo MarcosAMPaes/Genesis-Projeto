@@ -5,11 +5,19 @@ from petra.segmentation.adapters.birefnet import (
     TransformersBiRefNetRuntime,
 )
 from petra.segmentation.adapters.chroma import ChromaSegmenter
+from petra.segmentation.adapters.sam2 import (
+    Sam2Runtime,
+    Sam2Segmenter,
+    TransformersSam2Runtime,
+)
 
 __all__ = [
     "BiRefNetRuntime",
     "BiRefNetSegmenter",
     "ChromaSegmenter",
+    "Sam2Runtime",
+    "Sam2Segmenter",
     "Segmenter",
     "TransformersBiRefNetRuntime",
+    "TransformersSam2Runtime",
 ]

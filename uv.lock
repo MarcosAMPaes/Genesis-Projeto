@@ -741,6 +741,7 @@ seg-birefnet = [
 seg-sam2 = [
     { name = "torch" },
     { name = "torchvision" },
+    { name = "transformers" },
 ]
 seg-sam3 = [
     { name = "huggingface-hub" },
@@ -784,6 +785,7 @@ requires-dist = [
     { name = "torchvision", marker = "extra == 'seg-sam2'", specifier = ">=0.22" },
     { name = "torchvision", marker = "extra == 'seg-sam3'", specifier = ">=0.22" },
     { name = "transformers", marker = "extra == 'seg-birefnet'", specifier = ">=4.53,<6" },
+    { name = "transformers", marker = "extra == 'seg-sam2'", specifier = ">=4.53,<6" },
 ]
 provides-extras = ["seg-birefnet", "seg-sam2", "seg-sam3"]
 

@@ -10,9 +10,17 @@ import pytest
 from PIL import Image
 
 from petra.cli import main
-from petra.contracts import AutoPrompt, BoxPrompt, ModelDescriptor, SessionMeta
+from petra.contracts import (
+    AutoPrompt,
+    BoxPrompt,
+    ConceptPrompt,
+    ModelDescriptor,
+    PointsPrompt,
+    PromptPoint,
+    SessionMeta,
+)
 from petra.errors import ErrorCode, PetraError
-from petra.segmentation.adapters import BiRefNetSegmenter, ChromaSegmenter
+from petra.segmentation.adapters import BiRefNetSegmenter, ChromaSegmenter, Sam2Segmenter
 from petra.segmentation.registry import DeviceResolver, ModelRegistry
 
 pytestmark = pytest.mark.unit
@@ -149,6 +157,35 @@ def test_birefnet_adapter_is_local_and_numpy2_compatible_at_contract_boundary() 
     assert np.__version__.startswith("2.")
     assert prediction.score == pytest.approx(0.97)
     assert np.count_nonzero(prediction.mask) == 16 * 16
+
+
+def test_sam2_adapter_supports_point_and_box_without_silent_prompt_conversion() -> None:
+    class FakeRuntime:
+        def __init__(self) -> None:
+            self.prompts: list[PointsPrompt | BoxPrompt] = []
+
+        def predict(
+            self, image_rgb: np.ndarray, prompt: PointsPrompt | BoxPrompt
+        ) -> tuple[np.ndarray, float]:
+            self.prompts.append(prompt)
+            return np.ones(image_rgb.shape[:2], dtype=np.bool_), 0.96
+
+    descriptor = (
+        ModelRegistry.from_json(Path("config/models/registry.json"))
+        .entry("sam2.1-hiera-small")
+        .descriptor
+    )
+    runtime = FakeRuntime()
+    segmenter = Sam2Segmenter(descriptor, runtime)
+    image = np.zeros((24, 32, 3), dtype=np.uint8)
+    point_prompt = PointsPrompt(points=(PromptPoint(point=(8.0, 9.0), label=1),))
+    box_prompt = BoxPrompt(box=(2.0, 3.0, 20.0, 21.0))
+
+    assert segmenter.segment(image, point_prompt)[0].mask.shape == (24, 32)
+    assert segmenter.segment(image, box_prompt)[0].score == pytest.approx(0.96)
+    assert runtime.prompts == [point_prompt, box_prompt]
+    with pytest.raises(ValueError, match="points or box"):
+        segmenter.segment(image, ConceptPrompt(concept="stone fragment"))
 
 
 def test_segment_run_cli_emits_metric_geometry_with_chroma(tmp_path: Path) -> None:
