@@ -39,18 +39,30 @@ from petra.calibration.rectify import (
     rectify_image,
 )
 from petra.calibration.undistort import UndistortedFrame, Undistorter, UndistortMaps
+from petra.calibration.validation import (
+    DimensionalValidationReport,
+    DimensionMeasurement,
+    ScaleObservation,
+    load_measurements,
+    load_scales,
+    validate_dimensions,
+    write_dimensional_report,
+)
 
 __all__ = [
     "CalibrationAttemptReport",
     "CharucoBoardConfig",
     "CharucoDetection",
     "CheckerboardConfig",
+    "DimensionMeasurement",
+    "DimensionalValidationReport",
     "IntrinsicCalibrationResult",
     "LidarCheck",
     "PoseCalibrationResult",
     "PoseObservation",
     "RectificationResult",
     "RectifyConfig",
+    "ScaleObservation",
     "UndistortMaps",
     "UndistortedFrame",
     "Undistorter",
@@ -64,6 +76,8 @@ __all__ = [
     "detect_charuco",
     "detect_checkerboard",
     "homography_jacobian",
+    "load_measurements",
+    "load_scales",
     "native_gsd_at",
     "object_points",
     "parallax_factor",
@@ -73,5 +87,7 @@ __all__ = [
     "rectify_image",
     "resolve_thickness_mm",
     "sha256_file",
+    "validate_dimensions",
     "verify_profile_hash",
+    "write_dimensional_report",
 ]

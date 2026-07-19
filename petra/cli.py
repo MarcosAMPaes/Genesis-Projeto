@@ -22,7 +22,13 @@ from petra.calibration.rectify import (
     rectify_image,
 )
 from petra.calibration.undistort import Undistorter
-from petra.contracts import CalibProfile
+from petra.calibration.validation import (
+    load_measurements,
+    load_scales,
+    validate_dimensions,
+    write_dimensional_report,
+)
+from petra.contracts import CalibProfile, SessionMeta
 from petra.errors import PetraError
 
 
@@ -104,6 +110,41 @@ def _calibrate_rectify(args: argparse.Namespace) -> int:
         return 3
 
 
+def _calibrate_validate_dims(args: argparse.Namespace) -> int:
+    try:
+        profile = CalibProfile.model_validate_json(Path(args.profile).read_text(encoding="utf-8"))
+        verify_profile_hash(profile)
+        session_meta = [
+            SessionMeta.model_validate_json(Path(path).read_text(encoding="utf-8"))
+            for path in args.session_meta
+        ]
+        test_records = (
+            json.loads(Path(args.test_records).read_text(encoding="utf-8"))
+            if args.test_records
+            else {}
+        )
+        if not isinstance(test_records, dict):
+            raise ValueError("test records must be a JSON object")
+        report = validate_dimensions(
+            load_measurements(Path(args.input)),
+            load_scales(Path(args.scales)),
+            profile=profile,
+            session_meta=session_meta,
+            git_hash=args.git_hash,
+            contractual_period=args.contractual_period,
+            test_records={str(key): bool(value) for key, value in test_records.items()},
+            physical_evidence=args.physical_evidence,
+        )
+        write_dimensional_report(report, Path(args.output_dir))
+        return 0 if report.acceptance_state != "rejected" else 3
+    except (OSError, ValueError) as error:
+        print(f"invalid input: {error}")
+        return 2
+    except PetraError as error:
+        print(error)
+        return 3
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="petra", description="Pipeline Petra Smart")
     parser.add_argument("--version", action="version", version=__version__)
@@ -134,6 +175,19 @@ def build_parser() -> argparse.ArgumentParser:
     rectify.add_argument("--output", required=True)
     rectify.add_argument("--meta", required=True)
     rectify.set_defaults(handler=_calibrate_rectify)
+    validate_dims = calibrate_commands.add_parser(
+        "validate-dims", help="valida medidas contra paquimetro"
+    )
+    validate_dims.add_argument("--input", required=True)
+    validate_dims.add_argument("--scales", required=True)
+    validate_dims.add_argument("--profile", required=True)
+    validate_dims.add_argument("--session-meta", action="append", default=[])
+    validate_dims.add_argument("--test-records")
+    validate_dims.add_argument("--git-hash", required=True)
+    validate_dims.add_argument("--contractual-period", required=True)
+    validate_dims.add_argument("--physical-evidence", action="store_true")
+    validate_dims.add_argument("--output-dir", required=True)
+    validate_dims.set_defaults(handler=_calibrate_validate_dims)
     return parser
 
 

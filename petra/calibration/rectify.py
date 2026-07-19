@@ -89,9 +89,7 @@ class RectificationResult:
     interpolator: str
 
 
-def detect_charuco(
-    image_bgr: NDArray[np.uint8], config: CharucoBoardConfig
-) -> CharucoDetection:
+def detect_charuco(image_bgr: NDArray[np.uint8], config: CharucoBoardConfig) -> CharucoDetection:
     board = config.create_board()
     detector = cv2.aruco.CharucoDetector(board)
     charuco_corners, charuco_ids, _marker_corners, marker_ids = detector.detectBoard(image_bgr)
@@ -157,9 +155,7 @@ def homography_jacobian(
     )
 
 
-def native_gsd_at(
-    pixel_to_mm: NDArray[np.float64], point_px: tuple[float, float]
-) -> float:
+def native_gsd_at(pixel_to_mm: NDArray[np.float64], point_px: tuple[float, float]) -> float:
     singular_values = np.linalg.svd(homography_jacobian(pixel_to_mm, point_px), compute_uv=False)
     return float(math.sqrt(float(singular_values[0] * singular_values[1])))
 
@@ -283,8 +279,7 @@ def build_session_meta(
     lidar_divergence_pct: float,
 ) -> SessionMeta:
     homography = tuple(
-        tuple(float(result.pixel_to_mm[row, column]) for column in range(3))
-        for row in range(3)
+        tuple(float(result.pixel_to_mm[row, column]) for column in range(3)) for row in range(3)
     )
     return SessionMeta.model_validate(
         {
