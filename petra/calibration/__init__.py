@@ -18,6 +18,7 @@ from petra.calibration.profile import (
     persist_profile,
     sha256_file,
 )
+from petra.calibration.undistort import UndistortedFrame, Undistorter, UndistortMaps
 
 __all__ = [
     "CalibrationAttemptReport",
@@ -25,6 +26,9 @@ __all__ = [
     "IntrinsicCalibrationResult",
     "PoseCalibrationResult",
     "PoseObservation",
+    "UndistortMaps",
+    "UndistortedFrame",
+    "Undistorter",
     "build_profile",
     "calibrate_intrinsics",
     "canonical_profile_hash",
