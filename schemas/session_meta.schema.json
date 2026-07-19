@@ -154,6 +154,28 @@
       "title": "Residual Check Mm",
       "type": "number"
     },
+    "roi_mm": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      ],
+      "title": "Roi Mm",
+      "type": "array"
+    },
     "scale_mm_px": {
       "exclusiveMinimum": 0,
       "title": "Scale Mm Px",
@@ -200,6 +222,7 @@
     "output_gsd_mm_px",
     "resample_ratio",
     "rectified_img_size",
+    "roi_mm",
     "reference_plane_height_mm",
     "parallax_factor",
     "lidar_divergence_pct",

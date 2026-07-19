@@ -63,6 +63,7 @@ def valid_session_data() -> dict[str, object]:
         "output_gsd_mm_px": 0.08,
         "resample_ratio": 0.08 / 0.081,
         "rectified_img_size": [7500, 7500],
+        "roi_mm": [0.0, 0.0, 600.0, 600.0],
         "reference_plane_height_mm": 20.0,
         "parallax_factor": 1.0,
         "lidar_divergence_pct": 0.3,

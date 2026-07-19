@@ -89,6 +89,12 @@ class SessionMeta(ContractModel):
     output_gsd_mm_px: PositiveFloat
     resample_ratio: PositiveFloat = Field(description="output_gsd_mm_px / native_gsd_mm_px")
     rectified_img_size: ImageSize
+    roi_mm: tuple[
+        float,
+        float,
+        Annotated[float, Field(gt=0)],
+        Annotated[float, Field(gt=0)],
+    ]
     reference_plane_height_mm: NonNegativeFloat
     parallax_factor: PositiveFloat
     lidar_divergence_pct: NonNegativeFloat

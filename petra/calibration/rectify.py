@@ -85,6 +85,7 @@ class RectificationResult:
     resample_ratio: float
     residual_check_mm: float
     rectified_img_size: tuple[int, int]
+    roi_mm: tuple[float, float, float, float]
     marker_ids: tuple[int, ...]
     interpolator: str
 
@@ -260,6 +261,7 @@ def rectify_image(
         resample_ratio=resample_ratio,
         residual_check_mm=residual_check_mm,
         rectified_img_size=output_size,
+        roi_mm=config.roi_mm,
         marker_ids=detection.marker_ids,
         interpolator=config.interpolator,
     )
@@ -298,6 +300,7 @@ def build_session_meta(
             "output_gsd_mm_px": result.output_gsd_mm_px,
             "resample_ratio": result.resample_ratio,
             "rectified_img_size": result.rectified_img_size,
+            "roi_mm": result.roi_mm,
             "reference_plane_height_mm": reference_plane_height_mm,
             "parallax_factor": parallax_factor,
             "lidar_divergence_pct": lidar_divergence_pct,

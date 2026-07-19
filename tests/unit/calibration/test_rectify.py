@@ -114,6 +114,7 @@ def test_rectify_warps_to_physical_roi() -> None:
     assert session.native_gsd_mm_px == result.native_gsd_mm_px
     assert session.output_gsd_mm_px == result.output_gsd_mm_px
     assert session.rectified_img_size == result.rectified_img_size
+    assert session.roi_mm == config.roi_mm
 
 
 def test_rectification_rejects_occlusion_bad_ids_collinearity_residual_and_gsd() -> None:
