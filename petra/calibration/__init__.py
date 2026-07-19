@@ -9,13 +9,29 @@ from petra.calibration.intrinsic import (
     PoseCalibrationResult,
     calibrate_intrinsics,
 )
+from petra.calibration.profile import (
+    CalibrationAttemptReport,
+    build_profile,
+    canonical_profile_hash,
+    create_calibration_artifacts,
+    persist_attempt_report,
+    persist_profile,
+    sha256_file,
+)
 
 __all__ = [
+    "CalibrationAttemptReport",
     "CheckerboardConfig",
     "IntrinsicCalibrationResult",
     "PoseCalibrationResult",
     "PoseObservation",
+    "build_profile",
     "calibrate_intrinsics",
+    "canonical_profile_hash",
+    "create_calibration_artifacts",
     "detect_checkerboard",
     "object_points",
+    "persist_attempt_report",
+    "persist_profile",
+    "sha256_file",
 ]

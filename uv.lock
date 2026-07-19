@@ -719,6 +719,7 @@ name = "petra-smart"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "jsonschema" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
     { name = "pillow" },
@@ -752,7 +753,6 @@ seg-sam3 = [
 [package.dev-dependencies]
 dev = [
     { name = "hypothesis" },
-    { name = "jsonschema" },
     { name = "mypy" },
     { name = "pip-licenses" },
     { name = "pytest" },
@@ -766,6 +766,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'seg-birefnet'", specifier = ">=1.9,<2" },
     { name = "huggingface-hub", marker = "extra == 'seg-sam3'", specifier = ">=0.33,<2" },
     { name = "iopath", marker = "extra == 'seg-sam3'", specifier = ">=0.1.10,<1" },
+    { name = "jsonschema", specifier = ">=4.24,<5" },
     { name = "kornia", marker = "extra == 'seg-birefnet'", specifier = ">=0.8,<1" },
     { name = "numpy", specifier = ">=2,<3" },
     { name = "opencv-python-headless", specifier = ">=4.13,<6" },
@@ -789,7 +790,6 @@ provides-extras = ["seg-birefnet", "seg-sam2", "seg-sam3"]
 [package.metadata.requires-dev]
 dev = [
     { name = "hypothesis", specifier = ">=6.135,<7" },
-    { name = "jsonschema", specifier = ">=4.24,<5" },
     { name = "mypy", specifier = ">=1.16,<2" },
     { name = "pip-licenses", specifier = ">=5,<6" },
     { name = "pytest", specifier = ">=8.4,<10" },

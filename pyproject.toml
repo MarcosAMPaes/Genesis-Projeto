@@ -11,6 +11,7 @@ requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
 authors = [{ name = "Equipe Petra Smart" }]
 dependencies = [
+  "jsonschema>=4.24,<5",
   "numpy>=2,<3",
   "opencv-python-headless>=4.13,<6",
   "pillow>=11,<13",
@@ -44,7 +45,6 @@ seg-sam3 = [
 [dependency-groups]
 dev = [
   "hypothesis>=6.135,<7",
-  "jsonschema>=4.24,<5",
   "mypy>=1.16,<2",
   "pip-licenses>=5,<6",
   "pytest>=8.4,<10",
