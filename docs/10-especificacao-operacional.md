@@ -270,6 +270,8 @@ Origens: `AII` = Anexo II contratado (seção), `CRON-n` = entrega n do cronogra
 | TS-4 | Custo nuvem: gasto acumulado ≤ pró-rata de 120 h GPU + 500 GB | Monitor |
 | TS-5 | Licenças: auditoria automática de dependências compatível com D9 | CI |
 
+Estado incremental em 19/07/2026: o cron semanal executa `petra process-session` sobre uma fixture sintética congelada, cobrindo A→B com ChArUco real, retificação, paralaxe, chroma, pós-processamento e polígono métrico. O resultado é atômico e idempotente por fingerprint/hashes. Essa evidência é registrada como **`TS-1 partial`**; não satisfaz nem declara o TS-1 integral até C–F produzirem um painel validado.
+
 ### 7.2 Gates de qualidade
 
 | Gate | Critério objetivo | Quando |

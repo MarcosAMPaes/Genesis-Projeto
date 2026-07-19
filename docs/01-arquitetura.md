@@ -42,10 +42,12 @@ Regra de ouro: **pixel morre no estágio 6**. Empacotamento e exportação nunca
 petra/
 ├── calibration/   # Módulo A — Zhang, retificação, escala, validação dimensional
 ├── segmentation/  # Módulo B — SAM, máscara→polígono, simplificação
+├── contracts/     # Contratos Pydantic/JSON Schema nas fronteiras implementadas
+├── pipeline.py    # Orquestração A→B atômica, rastreável e idempotente
 ├── catalog/       # Módulo C — SQLite, ingest batch, sync S3
 ├── packing/       # Módulo D — NFP, BLF, SA, validador de colisão
 ├── export/        # Módulo F — SVG/PNG de aprovação + gabarito PDF 1:1/DXF
-└── cli.py         # pipeline end-to-end: pasta de fotos → painel otimizado
+└── cli.py         # comandos operacionais; A→B disponível, A→F ainda incremental
 ui/                # Módulo E — interface de operação (integra via CLI/API interna)
 tests/             # unitários + suíte de benchmark versionada
 ```

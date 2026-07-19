@@ -40,16 +40,7 @@ from petra.contracts import (
     SessionMeta,
 )
 from petra.errors import ErrorCode, PetraError
-from petra.segmentation.adapters import (
-    BiRefNetSegmenter,
-    BlockedSam31Runtime,
-    ChromaSegmenter,
-    Sam2Segmenter,
-    Sam31Segmenter,
-    Segmenter,
-    TransformersBiRefNetRuntime,
-    TransformersSam2Runtime,
-)
+from petra.pipeline import process_session
 from petra.segmentation.benchmark import (
     build_benchmark_report,
     file_sha256,
@@ -57,9 +48,10 @@ from petra.segmentation.benchmark import (
     write_benchmark_report,
 )
 from petra.segmentation.corpus import CorpusManifest
+from petra.segmentation.factory import resolve_segmenter
 from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
 from petra.segmentation.postprocess import postprocess_instances
-from petra.segmentation.registry import DeviceResolver, ModelRegistry
+from petra.segmentation.registry import ModelRegistry
 
 
 def _calibrate_create(args: argparse.Namespace) -> int:
@@ -223,36 +215,16 @@ def _segment_prompt(args: argparse.Namespace, *, default_concept: str | None = N
 def _segment_run(args: argparse.Namespace) -> int:
     try:
         registry = ModelRegistry.from_json(Path(args.registry))
-        registry.verify(args.backend)
         entry = registry.entry(args.backend)
-        device = DeviceResolver.resolve(args.device, entry.descriptor.supported_devices)
         session = SessionMeta.model_validate_json(
             Path(args.session_meta).read_text(encoding="utf-8")
         )
-        segmenter: Segmenter
-        if entry.descriptor.family == "chroma":
-            segmenter = ChromaSegmenter(entry.descriptor, background=session.background)
-        elif entry.descriptor.family == "birefnet":
-            runtime = TransformersBiRefNetRuntime(
-                str(registry.weights_path(args.backend).parent), device=device
-            )
-            segmenter = BiRefNetSegmenter(entry.descriptor, runtime)
-        elif entry.descriptor.family == "sam2":
-            sam2_runtime = TransformersSam2Runtime(
-                str(registry.weights_path(args.backend).parent), device=device
-            )
-            segmenter = Sam2Segmenter(entry.descriptor, sam2_runtime)
-        elif entry.descriptor.family == "sam3":
-            segmenter = Sam31Segmenter(
-                entry.descriptor,
-                BlockedSam31Runtime(),
-                device=device,
-            )
-        else:
-            raise PetraError(
-                ErrorCode.MODEL_UNAVAILABLE,
-                f"adapter is not installed in this increment: {args.backend}",
-            )
+        resolved = resolve_segmenter(
+            registry,
+            args.backend,
+            requested_device=args.device,
+            background=session.background,
+        )
         image_rgb = np.asarray(Image.open(args.image).convert("RGB"), dtype=np.uint8)
         marker_mask = (
             np.asarray(Image.open(args.marker_mask).convert("L"), dtype=np.uint8)
@@ -260,7 +232,7 @@ def _segment_run(args: argparse.Namespace) -> int:
             else None
         )
         default_concept = "stone fragment" if entry.descriptor.family == "sam3" else None
-        predictions = segmenter.segment(
+        predictions = resolved.segmenter.segment(
             image_rgb, _segment_prompt(args, default_concept=default_concept)
         )
         processed = postprocess_instances(
@@ -312,7 +284,7 @@ def _segment_run(args: argparse.Namespace) -> int:
         run_report = {
             "schema_version": "1.0.0",
             "backend": entry.descriptor.model_dump(mode="json"),
-            "device": device,
+            "device": resolved.device,
             "accepted": accepted,
             "rejected": rejections,
         }
@@ -362,6 +334,44 @@ def _segment_benchmark(args: argparse.Namespace) -> int:
         )
         write_benchmark_report(report, Path(args.output_dir))
         return 0 if report.d1.status == "production-selected" else 3
+    except (OSError, ValueError) as error:
+        print(f"invalid input: {error}")
+        return 2
+    except PetraError as error:
+        print(error)
+        return 3
+
+
+def _process_session(args: argparse.Namespace) -> int:
+    try:
+        registry = ModelRegistry.from_json(Path(args.registry))
+        family = registry.entry(args.backend).descriptor.family
+        default_concept = "stone fragment" if family == "sam3" else None
+        report, reused = process_session(
+            image_path=Path(args.image),
+            profile_path=Path(args.profile),
+            board_path=Path(args.board),
+            rectify_config_path=Path(args.config),
+            registry_path=Path(args.registry),
+            output_dir=Path(args.output_dir),
+            session_id=args.session_id,
+            thickness_mm=args.thickness_mm,
+            reference_plane_height_mm=args.reference_plane_height_mm,
+            background=args.background,
+            observed_z_mm_lidar=args.z_mm_lidar,
+            backend=args.backend,
+            requested_device=args.device,
+            prompt=_segment_prompt(args, default_concept=default_concept),
+            git_hash=args.git_hash,
+        )
+        if reused:
+            print("process-session: idempotent result reused")
+        if report.lidar_warning:
+            print(
+                f"warning: {report.lidar_divergence_pct:.3f}% LiDAR divergence; "
+                "recalibration review required"
+            )
+        return 0 if report.acceptance_state == "automated-accepted" else 3
     except (OSError, ValueError) as error:
         print(f"invalid input: {error}")
         return 2
@@ -452,6 +462,25 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--registry", default="config/models/registry.json")
     verify.add_argument("--model", action="append")
     verify.set_defaults(handler=_models_verify)
+    process = modules.add_parser("process-session", help="executa o fluxo rastreavel A para B")
+    process.add_argument("--image", required=True)
+    process.add_argument("--profile", required=True)
+    process.add_argument("--board", required=True)
+    process.add_argument("--config", required=True)
+    process.add_argument("--registry", default="config/models/registry.json")
+    process.add_argument("--session-id", required=True)
+    process.add_argument("--thickness-mm", required=True, type=float)
+    process.add_argument("--reference-plane-height-mm", required=True, type=float)
+    process.add_argument("--background", required=True)
+    process.add_argument("--z-mm-lidar", type=float)
+    process.add_argument("--backend", default="chroma")
+    process.add_argument("--device", choices=["auto", "cpu", "mps", "cuda"], default="auto")
+    process.add_argument("--point", nargs=3, action="append", type=float)
+    process.add_argument("--box", nargs=4, type=float)
+    process.add_argument("--concept")
+    process.add_argument("--git-hash", required=True)
+    process.add_argument("--output-dir", required=True)
+    process.set_defaults(handler=_process_session)
     return parser
 
 
