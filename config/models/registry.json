@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "models": [
+    {
+      "descriptor": {
+        "schema_version": "1.0.0",
+        "name": "chroma",
+        "family": "chroma",
+        "revision": "opencv-5.0.0",
+        "weights_sha256": null,
+        "license_spdx": "Apache-2.0",
+        "license_approved": true,
+        "supported_devices": ["cpu"],
+        "precision": "uint8"
+      },
+      "weights_path": null
+    }
+  ]
+}

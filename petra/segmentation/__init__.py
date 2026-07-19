@@ -20,13 +20,17 @@ from petra.segmentation.postprocess import (
     postprocess_instances,
     postprocess_mask,
 )
+from petra.segmentation.registry import DeviceResolver, ModelRegistry, ModelRegistryEntry
 
 __all__ = [
     "AssetRef",
     "CorpusManifest",
     "CorpusSample",
+    "DeviceResolver",
     "GeometryExtraction",
     "MaskRejection",
+    "ModelRegistry",
+    "ModelRegistryEntry",
     "PostprocessConfig",
     "PostprocessResult",
     "ProcessedMask",

@@ -9,6 +9,7 @@ from typing import cast
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+from PIL import Image
 from ulid import ULID
 
 from petra import __version__
@@ -28,8 +29,12 @@ from petra.calibration.validation import (
     validate_dimensions,
     write_dimensional_report,
 )
-from petra.contracts import CalibProfile, SessionMeta
-from petra.errors import PetraError
+from petra.contracts import AutoPrompt, CalibProfile, SessionMeta
+from petra.errors import ErrorCode, PetraError
+from petra.segmentation.adapters import ChromaSegmenter
+from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
+from petra.segmentation.postprocess import postprocess_instances
+from petra.segmentation.registry import DeviceResolver, ModelRegistry
 
 
 def _calibrate_create(args: argparse.Namespace) -> int:
@@ -145,6 +150,113 @@ def _calibrate_validate_dims(args: argparse.Namespace) -> int:
         return 3
 
 
+def _models_verify(args: argparse.Namespace) -> int:
+    try:
+        results = ModelRegistry.from_json(Path(args.registry)).verify_all()
+        print(json.dumps(results, indent=2, sort_keys=True))
+        return 0 if all(value == "verified" for value in results.values()) else 4
+    except (OSError, ValueError) as error:
+        print(f"invalid input: {error}")
+        return 2
+
+
+def _segment_run(args: argparse.Namespace) -> int:
+    try:
+        registry = ModelRegistry.from_json(Path(args.registry))
+        registry.verify(args.backend)
+        entry = registry.entry(args.backend)
+        device = DeviceResolver.resolve(args.device, entry.descriptor.supported_devices)
+        if entry.descriptor.family != "chroma":
+            raise PetraError(
+                ErrorCode.MODEL_UNAVAILABLE,
+                f"adapter is not installed in this increment: {args.backend}",
+            )
+        session = SessionMeta.model_validate_json(
+            Path(args.session_meta).read_text(encoding="utf-8")
+        )
+        image_rgb = np.asarray(Image.open(args.image).convert("RGB"), dtype=np.uint8)
+        marker_mask = (
+            np.asarray(Image.open(args.marker_mask).convert("L"), dtype=np.uint8)
+            if args.marker_mask
+            else None
+        )
+        segmenter = ChromaSegmenter(entry.descriptor, background=session.background)
+        predictions = segmenter.segment(image_rgb, AutoPrompt())
+        processed = postprocess_instances(
+            [prediction.mask for prediction in predictions],
+            scale_mm_px=session.output_gsd_mm_px,
+            parallax_factor=session.parallax_factor,
+            marker_mask=marker_mask,
+        )
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        accepted: list[str] = []
+        geometry_rejections: list[dict[str, object]] = []
+        scores = {index: prediction.score for index, prediction in enumerate(predictions)}
+        for item in processed.accepted:
+            fragment_id = str(ULID())
+            mask_path = output_dir / f"{fragment_id}.mask.png"
+            Image.fromarray(item.mask.astype(np.uint8) * 255).save(mask_path)
+            try:
+                extraction = extract_fragment_geometry(
+                    item,
+                    session,
+                    seg_model=entry.descriptor.name,
+                    seg_model_revision=entry.descriptor.revision,
+                    seg_score=scores[item.instance_index],
+                    photo_path=args.image,
+                    mask_path=str(mask_path),
+                    fragment_id=fragment_id,
+                )
+                geometry_path = output_dir / f"{fragment_id}.fragment_geom.json"
+                persist_fragment_geom(extraction.fragment, geometry_path)
+                accepted.append(str(geometry_path))
+            except PetraError as error:
+                geometry_rejections.append(
+                    {
+                        "instance_index": item.instance_index,
+                        "code": error.code,
+                        "message": error.message,
+                    }
+                )
+        rejections = [
+            {
+                "instance_index": item.instance_index,
+                "code": item.code,
+                "message": item.message,
+                "details": item.details,
+            }
+            for item in processed.rejected
+        ] + geometry_rejections
+        run_report = {
+            "schema_version": "1.0.0",
+            "backend": entry.descriptor.model_dump(mode="json"),
+            "device": device,
+            "accepted": accepted,
+            "rejected": rejections,
+        }
+        (output_dir / "segmentation-run.json").write_text(
+            json.dumps(run_report, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return 0 if accepted else 3
+    except (OSError, ValueError) as error:
+        print(f"invalid input: {error}")
+        return 2
+    except PetraError as error:
+        print(error)
+        return (
+            4
+            if error.code
+            in {
+                ErrorCode.WEIGHTS_MISSING,
+                ErrorCode.MODEL_UNAVAILABLE,
+                ErrorCode.LICENSE_NOT_APPROVED,
+            }
+            else 3
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="petra", description="Pipeline Petra Smart")
     parser.add_argument("--version", action="version", version=__version__)
@@ -188,6 +300,22 @@ def build_parser() -> argparse.ArgumentParser:
     validate_dims.add_argument("--physical-evidence", action="store_true")
     validate_dims.add_argument("--output-dir", required=True)
     validate_dims.set_defaults(handler=_calibrate_validate_dims)
+    segment = modules.add_parser("segment", help="segmentacao e geometria")
+    segment_commands = segment.add_subparsers(dest="segment_command")
+    segment_run = segment_commands.add_parser("run", help="segmenta uma imagem retificada")
+    segment_run.add_argument("--image", required=True)
+    segment_run.add_argument("--session-meta", required=True)
+    segment_run.add_argument("--backend", default="chroma")
+    segment_run.add_argument("--device", choices=["auto", "cpu", "mps", "cuda"], default="auto")
+    segment_run.add_argument("--registry", default="config/models/registry.json")
+    segment_run.add_argument("--marker-mask")
+    segment_run.add_argument("--output-dir", required=True)
+    segment_run.set_defaults(handler=_segment_run)
+    models = modules.add_parser("models", help="pesos e registro de modelos")
+    model_commands = models.add_subparsers(dest="models_command")
+    verify = model_commands.add_parser("verify", help="verifica pesos e licencas")
+    verify.add_argument("--registry", default="config/models/registry.json")
+    verify.set_defaults(handler=_models_verify)
     return parser
 
 

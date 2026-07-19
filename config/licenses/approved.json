@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "approved": [
+    {
+      "component": "opencv-python-headless",
+      "spdx": "Apache-2.0",
+      "scope": "chroma baseline and geometric processing"
+    }
+  ]
+}
