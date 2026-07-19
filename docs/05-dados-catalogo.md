@@ -1,6 +1,8 @@
 # 05 — Modelo de Dados e Catálogo
 
-Fonte de verdade: SQLite local. S3 é espelho/backup e insumo de processamento em nuvem. Regras: geometria em **mm** (µm inteiros dentro do módulo de nesting), tudo rastreável até a foto e o perfil de calibração que o gerou.
+Fonte de verdade: SQLite local. S3 é espelho/backup e insumo de processamento em nuvem. Regras: geometria em **mm float64 fim a fim** (arquitetura v2 — o engine `jagua-rs` opera em float robusto; conversão a inteiros só se o validador raster precisar), tudo rastreável até a foto e o perfil de calibração que o gerou.
+
+> **Atualizado para a arquitetura v2 (doc 10, C2):** tabela `nfp_cache` removida (a detecção de colisão é responsabilidade do engine) e coluna `engine` adicionada a `packing_run`.
 
 ## 5.1 Esquema (SQLite)
 
@@ -8,7 +10,7 @@ Fonte de verdade: SQLite local. S3 é espelho/backup e insumo de processamento e
 CREATE TABLE calib_profile (
   id TEXT PRIMARY KEY,            -- hash do conteúdo
   created_at TEXT NOT NULL,
-  device TEXT NOT NULL,           -- "iPhone15Pro/main-1x"
+  device TEXT NOT NULL,           -- "iPhone17Pro/main-1x"
   K_json TEXT NOT NULL, dist_json TEXT NOT NULL,
   rms_px REAL NOT NULL,
   z_mm REAL,                      -- distância LiDAR câmera→plano
@@ -41,21 +43,17 @@ CREATE TABLE fragment (
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE nfp_cache (
-  key TEXT PRIMARY KEY,           -- hashA:hashB:rotA:rotB (µm, rotações discretas)
-  nfp_wkt TEXT NOT NULL,
-  computed_at TEXT NOT NULL, engine_version TEXT NOT NULL
-);
-
 CREATE TABLE packing_run (
   id TEXT PRIMARY KEY,
   created_at TEXT NOT NULL,
   panel_w_mm REAL NOT NULL, panel_h_mm REAL NOT NULL,
   joint_mm REAL NOT NULL,
   objective TEXT NOT NULL,        -- panel|strip
-  params_json TEXT NOT NULL,      -- T0, alpha, vizinhanças, rotações, pesos
+  engine TEXT NOT NULL,           -- "sparrow@<versão>" | "petra-panel@<versão>"
+  params_json TEXT NOT NULL,      -- config do engine + camada painel (subconjunto/SA)
   seed INTEGER NOT NULL,
   code_version TEXT NOT NULL,     -- git hash
+  env_fingerprint TEXT NOT NULL,  -- arch+threads+versões pinadas (determinismo escopado, doc 10)
   utilization REAL, height_mm REAL, n_placed INTEGER,
   runtime_s REAL, validated INTEGER NOT NULL  -- validador independente passou
 );
@@ -70,8 +68,8 @@ CREATE TABLE placement (
 
 ## 5.2 Formatos e convenções
 
-- **WKT** para geometria no banco (legível, Shapely nativo: `shapely.from_wkt`); GeoJSON só como formato de exportação/intercâmbio;
-- Unidade canônica **mm** (float) no catálogo; conversão para **µm int** na fronteira do módulo de nesting (Clipper) e de volta na saída;
+- **WKT** para geometria no banco (legível, Shapely nativo: `shapely.from_wkt`); GeoJSON/JSON do jagua-rs como formatos de exportação/intercâmbio;
+- Unidade canônica **mm float64** fim a fim (v2); rasterização/inteiros apenas dentro do validador independente, se necessário;
 - IDs: ULID (ordenáveis por tempo);
 - `status` do fragmento controla o ciclo de vida físico: peça usada num mosaico real sai do estoque (`used`) — o catálogo é também **inventário do estoque de retalhos**;
 - Mídia (foto/máscara) no filesystem organizado por sessão: `data/sessions/<session_id>/{raw,rect,mask}/<fragment_id>.png` — path no banco, binário fora do banco.

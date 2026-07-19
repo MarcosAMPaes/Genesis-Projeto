@@ -31,6 +31,15 @@ Fontes canônicas por tema. Prioridade de leitura marcada com ★ (essencial par
 - Wäscher, G., Haußner, H., Schumann, H. — *An improved typology of cutting and packing problems*. EJOR, 2007. (Taxonomia — situa a variante exata do nosso problema)
 - **ESICUP** (EURO Special Interest Group on Cutting and Packing) — instâncias de benchmark públicas (shirts, swim, trousers, albano etc.)
 
+## Estado da arte 2024–2026 (ver análise no [doc 09](09-estado-da-arte.md))
+
+- ★ Gardeyn, Vanden Berghe, Wauters — *An open-source heuristic to reboot 2D nesting research* (**sparrow**). arXiv:2509.13329, 2025 (v3 2026). **Novo SOTA aberto em strip packing irregular**
+- ★ Gardeyn et al. — *Decoupling Geometry from Optimization in 2D Irregular C&P Problems* (**jagua-rs**). INFORMS Journal on Computing, 2024. doi:10.1287/ijoc.2024.1025
+- Umetani & Murakami — *Coordinate descent heuristics for the irregular strip packing problem of rasterized shapes*. EJOR 303(3), 2022
+- Cherri et al. — modelos MIP por fatias verticais (NFP-CM-VS). EJOR, 2024 (exatos; instâncias pequenas)
+- Ravi et al. — *SAM 3: Segment Anything with Concepts*. Meta AI, nov/2025 (concept prompts — todas as instâncias de uma vez)
+- Zheng et al. — *Bilateral Reference for High-Resolution Dichotomous Image Segmentation* (**BiRefNet**). CAAI AIR, 2024. MIT — candidato a padrão local de segmentação
+
 ## Implementações de referência (ler o código)
 
 - **SVGnest** (github.com/Jack000/SVGnest) — nesting irregular em JS: NFP orbital + GA. Melhor referência de "como tudo se conecta"; nossa busca é SA, não GA

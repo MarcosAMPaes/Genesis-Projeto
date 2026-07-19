@@ -39,7 +39,7 @@ Metas numéricas por estágio + como medir. Benchmarks rodam a cada release; res
 | Aproveitamento (painel) | ≥ 70% (*fixar após 1º benchmark real*) | Σ área peças (sem buffer) ÷ área do painel; benchmark interno congelado |
 | Ganho sobre baseline | SA > BLF-área-decrescente, estatisticamente (10 seeds) | Mesmo conjunto, mediana e melhor-de-10 |
 | Tempo de convergência | < 10 min (painel 1 m², ~50 peças, notebook) | Benchmark padrão, orçamento de tempo fixo |
-| Reprodutibilidade | bit a bit por seed | Teste automatizado no CI |
+| Determinismo (escopado) | bit a bit por seed **no ambiente de referência pinado** (versões, arch, threads); entre ambientes: equivalência geométrica, métricas ±0,1% | Teste automatizado no CI + `env_fingerprint` registrado por corrida |
 | Sanidade externa | Aproveitamento na faixa publicada p/ SA em instâncias ESICUP | shirts/swim/trousers, comparação qualitativa |
 
 ## Sistema integrado

@@ -34,7 +34,7 @@ undistorted = cv2.remap(img, map1, map2, cv2.INTER_LINEAR)
 3. Foco e zoom **travados** durante toda a sessão — mudou foco, recalibrou;
 4. Aceite: RMS < 0,5 px; inspecionar resíduos por imagem (uma pose ruim contamina o conjunto — descartar outliers e recalibrar).
 
-## 2.2 Especificidades do iPhone 15 Pro
+## 2.2 Especificidades do iPhone 17 Pro (aparelho real do projeto)
 
 - Usar **sempre a lente principal 1×** (48 MP). Nunca deixar o iOS trocar de lente automaticamente (macro/0.5×/2× têm intrínsecos diferentes — cada lente é outra câmera);
 - Travar foco e exposição por sessão (captura via app com controle manual AVFoundation ou app de câmera manual); AF contínuo muda a distância focal efetiva;

@@ -53,8 +53,8 @@ flowchart TB
     end
 
     subgraph NESTING["🧩 4. Otimização — o núcleo"]
-        I[No-Fit Polygon<br/>geometria exata de encaixe] --> J[Bottom-Left Fill<br/>construção do arranjo]
-        J --> K[Simulated Annealing<br/>busca: sequência + rotações]
+        I[jagua-rs<br/>colisão + junta + rotação contínua] --> J[sparrow<br/>SOTA 2025: strip packing]
+        J --> K[Camada Petra<br/>painel fixo + seleção de peças + SA]
         K --> L{Validador independente<br/>zero sobreposições}
     end
 
@@ -74,7 +74,7 @@ flowchart TB
 | 1 | **Calibrar** | Método de Zhang (OpenCV) + retificação por ArUco | Uma foto vira uma *medição* confiável (erro ≤ 2 mm) |
 | 2 | **Segmentar** | SAM (Vision Transformer) | Contorno preciso de qualquer rocha, sem treinar modelo próprio |
 | 3 | **Simplificar** | Douglas-Peucker (ε = 0,5 mm) | Centenas de pontos bastam; nesting fica computável |
-| 4 | **Empacotar** | NFP + BLF + Simulated Annealing (α = 0,995) | Estado da arte prático para nesting irregular NP-difícil |
+| 4 | **Empacotar** | `sparrow`/`jagua-rs` (SOTA 2025) + camada própria de painel/SA | Estado da arte aberto para nesting irregular NP-difícil |
 | 5 | **Exportar** | Gabarito 1:1 + relatório de aproveitamento | O arranjo digital vira mosaico físico que fecha na montagem |
 
 ## 📂 Estrutura do repositório
@@ -101,6 +101,8 @@ Genesis-Projeto/
 | [06 · Métricas](docs/06-metricas-tecnicas.md) | Metas numéricas + protocolos de medição |
 | [07 · Roadmap](docs/07-roadmap.md) | Módulos A–F com critérios de aceite |
 | [08 · Referências](docs/08-referencias.md) | Papers e implementações canônicas |
+| [09 · Estado da arte](docs/09-estado-da-arte.md) | Pesquisa 2026: por que sparrow/jagua-rs, SAM 3 e BiRefNet |
+| [10 · Especificação](docs/10-especificacao-operacional.md) | 📌 Fonte de verdade: contratos, requisitos, plano testável |
 
 ## 🎯 Metas de qualidade
 
@@ -120,7 +122,7 @@ Genesis-Projeto/
 ## 🧰 Stack
 
 **Visão computacional:** OpenCV (calibração, contornos, ArUco) · PyTorch + SAM (segmentação)
-**Geometria:** Shapely 2.x (validação, métricas) · pyclipper/Clipper2 (offset de junta, Minkowski, µm inteiros)
+**Nesting:** `sparrow` + `jagua-rs` (SOTA aberto, KU Leuven) · Shapely 2.x (validação independente)
 **Dados:** SQLite (catálogo local) · AWS S3 (backup) · AWS EC2 g5.xlarge (lotes GPU)
 **Hardware:** iPhone 17 Pro (captura 48 MP + LiDAR) · bancada de captura com iluminação LED controlada
 
@@ -131,7 +133,7 @@ Genesis-Projeto/
 - [ ] **Módulo A — Calibração e metrologia** ← em desenvolvimento
 - [ ] Módulo B — Segmentação (SAM → polígono métrico)
 - [ ] Módulo C — Catálogo de fragmentos
-- [ ] Módulo D — Empacotamento (NFP + BLF + SA)
+- [ ] Módulo D — Empacotamento (sparrow/jagua-rs + camada painel)
 - [ ] Módulo E — Interface de operação
 - [ ] Módulo F — Exportação e gabarito 1:1
 - [ ] Testes piloto com marmorarias parceiras

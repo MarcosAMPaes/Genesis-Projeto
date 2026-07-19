@@ -18,6 +18,8 @@ Norte do desenvolvimento de software. Gestão do projeto (edital FAPES, cronogra
 | [06-metricas-tecnicas.md](06-metricas-tecnicas.md) | Metas numéricas e protocolos de medição por estágio |
 | [07-roadmap.md](07-roadmap.md) | Módulos A–F, ordem de desenvolvimento, critérios de aceite |
 | [08-referencias.md](08-referencias.md) | Papers e ferramentas canônicas por tema |
+| [09-estado-da-arte.md](09-estado-da-arte.md) | 🔍 **Pesquisa jul/2026 + veredito**: sparrow/jagua-rs, SAM 3, BiRefNet — arquitetura v2 |
+| [10-especificacao-operacional.md](10-especificacao-operacional.md) | 📌 **FONTE DE VERDADE da implementação**: contratos A–F, matriz de requisitos, contradições, decisões, riscos, plano testável |
 
 ## Princípios de engenharia do projeto
 

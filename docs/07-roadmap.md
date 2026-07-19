@@ -2,6 +2,8 @@
 
 Ordem de construção dos módulos, entregas e critérios de aceite. Datas-alvo alinhadas ao calendário do projeto (referência externa: `/gestao/03-cronograma.md`), mas este doc só trata do software.
 
+> **⚠️ Superado em parte pelo doc 10:** o [plano de implementação testável (doc 10 §7)](10-especificacao-operacional.md) detalha sprints S0–S8 com gates G1–G5 e **substitui o plano do Módulo D abaixo** — o empacotamento agora começa pela adoção de `sparrow`/`jagua-rs` (gate G1), não pela implementação de NFP própria.
+
 ## Sequência e dependências
 
 ```

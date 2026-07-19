@@ -1,5 +1,7 @@
 # 04 — Empacotamento Irregular (Nesting) — Doc Central
 
+> **⚠️ Atualização (jul/2026):** a pesquisa de estado da arte no [doc 09](09-estado-da-arte.md) recomenda **não implementar NFP do zero** e adotar `sparrow`/`jagua-rs` (SOTA aberto 2025/26) como motor, mantendo este doc como fundamento teórico e plano de fallback. Ler o doc 09 antes de iniciar o Módulo D.
+
 Você está resolvendo o **2D irregular nesting problem** (família *cutting & packing*, Wäscher et al.): posicionar polígonos simples arbitrários (côncavos, sem eixos privilegiados, todos distintos) numa região, sem sobreposição, otimizando aproveitamento. **NP-difícil**; métodos exatos (MIP) só resolvem instâncias de brinquedo (~10–15 peças). Na prática industrial: geometria exata para viabilidade + heurística construtiva + meta-heurística para busca. É exatamente a arquitetura contratada (NFP + BLF + SA).
 
 ## 4.1 Formalização

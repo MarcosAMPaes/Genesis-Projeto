@@ -2,6 +2,8 @@
 
 Pipeline completo, do fragmento físico ao mosaico executável. Cada estágio tem doc próprio com profundidade; aqui está o mapa.
 
+> **⚠️ Arquitetura v2 (jul/2026):** o estágio 8 agora usa **`sparrow`/`jagua-rs`** no fluxo principal (doc 09), e a [especificação operacional consolidada (doc 10)](10-especificacao-operacional.md) prevalece sobre o que conflitar aqui — em particular: convenção **mm float64** (não µm inteiros), rotação **contínua** (D3 dissolvida) e decisões D1–D9 atualizadas no doc 10 §5.
+
 ## Visão do pipeline
 
 ```
@@ -55,7 +57,7 @@ Critérios de aceite por módulo: [07-roadmap.md](07-roadmap.md). Metas numéric
 | Recurso | Uso | Observação |
 |---|---|---|
 | Notebook Apple Silicon (16 GB) | Dev, calibração, segmentação unitária, SA | PyTorch via **MPS** — sem CUDA local; SAM ViT-H é pesado aqui, preferir variante leve (doc 03) |
-| iPhone 15 Pro | Captura 48 MP + LiDAR (checagem de distância) | Foco/exposição travados por sessão (doc 02) |
+| iPhone 17 Pro | Captura 48 MP + LiDAR (checagem de distância) | Foco/exposição travados por sessão (doc 02) |
 | AWS EC2 g5.xlarge (A10G 24 GB) | Lotes de segmentação; corridas longas de SA multi-seed | ~120 h orçadas no ano — usar em lote, nunca ocioso |
 | AWS S3 | Backup do catálogo (imagens, máscaras, polígonos) | 500 GB orçados; lifecycle para originais antigos |
 | SQLite | Catálogo local (fonte de verdade) | S3 é espelho, não banco |

@@ -41,7 +41,7 @@ approx = cv2.approxPolyDP(contour, epsilon, True)      # Douglas-Peucker
 
 ### Escolha do ε (Douglas-Peucker)
 
-- ε em **unidades físicas**, não pixels: alvo inicial **ε = 0,5 mm** (convertido a px pela escala da sessão). Assim a fidelidade independe da configuração de captura;
+- ε em **unidades físicas**, não pixels: alvo inicial **ε = 0,5 mm**. Conversão correta (o `epsilon` do OpenCV está na unidade das coordenadas do contorno, i.e. pixels): `epsilon_px = ε_mm / scale_mm_px`, com `scale_mm_px` em mm/px — **dividir, não multiplicar**. Assim a fidelidade independe da configuração de captura;
 - Douglas-Peucker garante desvio máximo ≤ ε por construção — ε = 0,5 mm mantém o erro de simplificação uma ordem abaixo da tolerância dimensional (2 mm);
 - Validar com a curva ε × (nº de pontos, desvio de área, Hausdorff) no conjunto de validação; publicar a curva no relatório de benchmark e fixar o padrão;
 - Esperado: ~10⁴ pontos → 100–400 pontos (>95% de redução). Ponto de equilíbrio: menos pontos = NFP mais barato (custo cresce com nº de vértices); pontos demais = nesting lento; de menos = mosaico não fecha.
