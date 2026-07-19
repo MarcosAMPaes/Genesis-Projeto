@@ -29,4 +29,6 @@ jobs:
       - run: uv run python scripts/check_schemas.py
       - run: uv run python scripts/check_licenses.py
       - run: uv run python scripts/lint_validation_corpus.py
-      - run: uv run pytest -m "not model and not benchmark and not physical"
+      - run: >-
+          uv run pytest -m "not model and not benchmark and not physical"
+          --cov=petra --cov-report=term-missing --cov-fail-under=90

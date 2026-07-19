@@ -80,6 +80,12 @@ source = ["petra"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+include = [
+  "petra/contracts/*",
+  "petra/calibration/*",
+  "petra/segmentation/geometry.py",
+  "petra/segmentation/postprocess.py",
+]
 
 [tool.ruff]
 line-length = 100

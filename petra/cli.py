@@ -50,6 +50,13 @@ from petra.segmentation.adapters import (
     TransformersBiRefNetRuntime,
     TransformersSam2Runtime,
 )
+from petra.segmentation.benchmark import (
+    build_benchmark_report,
+    file_sha256,
+    load_candidate_inputs,
+    write_benchmark_report,
+)
+from petra.segmentation.corpus import CorpusManifest
 from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
 from petra.segmentation.postprocess import postprocess_instances
 from petra.segmentation.registry import DeviceResolver, ModelRegistry
@@ -331,6 +338,38 @@ def _segment_run(args: argparse.Namespace) -> int:
         )
 
 
+def _segment_benchmark(args: argparse.Namespace) -> int:
+    try:
+        registry = ModelRegistry.from_json(Path(args.registry))
+        candidates = load_candidate_inputs(Path(args.input))
+        corpus_path = Path(args.corpus_manifest)
+        corpus = CorpusManifest.model_validate_json(corpus_path.read_text(encoding="utf-8"))
+        verified_backends: set[str] = set()
+        for candidate in candidates:
+            try:
+                registry.verify(candidate.backend)
+                verified_backends.add(candidate.backend)
+            except PetraError:
+                pass
+        report = build_benchmark_report(
+            candidates,
+            registry=registry,
+            corpus=corpus,
+            corpus_manifest_sha256=file_sha256(corpus_path),
+            verified_backends=verified_backends,
+            git_hash=args.git_hash,
+            hardware=args.hardware,
+        )
+        write_benchmark_report(report, Path(args.output_dir))
+        return 0 if report.d1.status == "production-selected" else 3
+    except (OSError, ValueError) as error:
+        print(f"invalid input: {error}")
+        return 2
+    except PetraError as error:
+        print(error)
+        return 3
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="petra", description="Pipeline Petra Smart")
     parser.add_argument("--version", action="version", version=__version__)
@@ -397,6 +436,16 @@ def build_parser() -> argparse.ArgumentParser:
     segment_run.add_argument("--marker-mask")
     segment_run.add_argument("--output-dir", required=True)
     segment_run.set_defaults(handler=_segment_run)
+    segment_benchmark = segment_commands.add_parser(
+        "benchmark", help="agrega o bake-off e aplica a regra D1"
+    )
+    segment_benchmark.add_argument("--input", required=True)
+    segment_benchmark.add_argument("--corpus-manifest", default="data/validation/manifest.json")
+    segment_benchmark.add_argument("--registry", default="config/models/registry.json")
+    segment_benchmark.add_argument("--git-hash", required=True)
+    segment_benchmark.add_argument("--hardware", required=True)
+    segment_benchmark.add_argument("--output-dir", required=True)
+    segment_benchmark.set_defaults(handler=_segment_benchmark)
     models = modules.add_parser("models", help="pesos e registro de modelos")
     model_commands = models.add_subparsers(dest="models_command")
     verify = model_commands.add_parser("verify", help="verifica pesos e licencas")

@@ -4,17 +4,34 @@ on:
   workflow_dispatch:
     inputs:
       suite:
-        description: Suite que requer o corpus congelado
+        description: Suite manual
         required: true
         type: choice
         options: [model, benchmark, physical]
+      target:
+        description: Runtime; cuda requer runner EC2 g5.xlarge com label ec2-g5
+        required: true
+        type: choice
+        options: [cpu, mps, cuda]
+      benchmark_input:
+        description: JSON de observacoes, obrigatorio para suite benchmark
+        required: false
+        type: string
+      hardware:
+        description: Identificacao exata do hardware/driver
+        required: true
+        type: string
 
 env:
   GIT_LFS_SKIP_SMUDGE: "1"
 
 jobs:
-  corpus:
-    runs-on: ubuntu-latest
+  suite:
+    runs-on: ${{ inputs.target == 'mps' && 'macos-14' || inputs.target == 'cuda' && 'ec2-g5' || 'ubuntu-latest' }}
+    env:
+      PETRA_BENCHMARK_INPUT: ${{ inputs.benchmark_input }}
+      PETRA_BENCHMARK_GIT_HASH: ${{ github.sha }}
+      PETRA_BENCHMARK_HARDWARE: ${{ inputs.hardware }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,8 +39,13 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: git lfs fetch --include="data/validation/**" --exclude=""
-      - run: git lfs checkout data/validation
-      - run: uv sync --group dev
-      - run: uv run python scripts/lint_validation_corpus.py --require-frozen
+      - if: inputs.suite != 'model'
+        run: git lfs fetch --include="data/validation/**" --exclude=""
+      - if: inputs.suite != 'model'
+        run: git lfs checkout data/validation
+      - run: uv sync --group dev --all-extras
+      - if: inputs.suite != 'model'
+        run: uv run python scripts/lint_validation_corpus.py --require-frozen
+      - if: inputs.suite == 'benchmark'
+        run: uv run python -c "from pathlib import Path; assert Path(r'${{ inputs.benchmark_input }}').is_file(), 'benchmark_input ausente'"
       - run: uv run pytest -m "${{ inputs.suite }}"
