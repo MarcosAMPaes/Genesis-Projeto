@@ -1,0 +1,7 @@
+{
+  "gsd_policy": "preserve_native",
+  "target_gsd_mm_px": null,
+  "max_resample_change_pct": 10.0,
+  "roi_mm": [0.0, 0.0, 600.0, 600.0],
+  "interpolator": "linear"
+}
