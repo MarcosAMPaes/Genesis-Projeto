@@ -33,6 +33,7 @@ from petra.contracts import (
     AutoPrompt,
     BoxPrompt,
     CalibProfile,
+    ConceptPrompt,
     PointsPrompt,
     PromptPoint,
     PromptSpec,
@@ -41,8 +42,10 @@ from petra.contracts import (
 from petra.errors import ErrorCode, PetraError
 from petra.segmentation.adapters import (
     BiRefNetSegmenter,
+    BlockedSam31Runtime,
     ChromaSegmenter,
     Sam2Segmenter,
+    Sam31Segmenter,
     Segmenter,
     TransformersBiRefNetRuntime,
     TransformersSam2Runtime,
@@ -183,9 +186,10 @@ def _models_verify(args: argparse.Namespace) -> int:
         return 2
 
 
-def _segment_prompt(args: argparse.Namespace) -> PromptSpec:
-    if args.point and args.box:
-        raise ValueError("use points or box, not both")
+def _segment_prompt(args: argparse.Namespace, *, default_concept: str | None = None) -> PromptSpec:
+    supplied = sum(bool(value) for value in (args.point, args.box, args.concept))
+    if supplied > 1:
+        raise ValueError("use exactly one prompt family")
     if args.point:
         points: list[PromptPoint] = []
         for x_value, y_value, label_value in args.point:
@@ -202,6 +206,10 @@ def _segment_prompt(args: argparse.Namespace) -> PromptSpec:
         return BoxPrompt(
             box=cast(tuple[float, float, float, float], tuple(float(v) for v in args.box))
         )
+    if args.concept:
+        return ConceptPrompt(concept=str(args.concept))
+    if default_concept is not None:
+        return ConceptPrompt(concept=default_concept)
     return AutoPrompt()
 
 
@@ -227,6 +235,12 @@ def _segment_run(args: argparse.Namespace) -> int:
                 str(registry.weights_path(args.backend).parent), device=device
             )
             segmenter = Sam2Segmenter(entry.descriptor, sam2_runtime)
+        elif entry.descriptor.family == "sam3":
+            segmenter = Sam31Segmenter(
+                entry.descriptor,
+                BlockedSam31Runtime(),
+                device=device,
+            )
         else:
             raise PetraError(
                 ErrorCode.MODEL_UNAVAILABLE,
@@ -238,7 +252,10 @@ def _segment_run(args: argparse.Namespace) -> int:
             if args.marker_mask
             else None
         )
-        predictions = segmenter.segment(image_rgb, _segment_prompt(args))
+        default_concept = "stone fragment" if entry.descriptor.family == "sam3" else None
+        predictions = segmenter.segment(
+            image_rgb, _segment_prompt(args, default_concept=default_concept)
+        )
         processed = postprocess_instances(
             [prediction.mask for prediction in predictions],
             scale_mm_px=session.output_gsd_mm_px,
@@ -376,6 +393,7 @@ def build_parser() -> argparse.ArgumentParser:
     segment_run.add_argument(
         "--box", nargs=4, type=float, metavar=("X_MIN", "Y_MIN", "X_MAX", "Y_MAX")
     )
+    segment_run.add_argument("--concept", help="conceito textual para SAM 3.1")
     segment_run.add_argument("--marker-mask")
     segment_run.add_argument("--output-dir", required=True)
     segment_run.set_defaults(handler=_segment_run)

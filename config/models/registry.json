@@ -42,6 +42,20 @@
         "precision": "float32"
       },
       "weights_path": "../../weights/sam2/model.safetensors"
+    },
+    {
+      "descriptor": {
+        "schema_version": "1.0.0",
+        "name": "sam3.1-multiplex",
+        "family": "sam3",
+        "revision": "release:2026-03-27;code:blocked-upstream-issue-526",
+        "weights_sha256": "0567debeec80ba4ac6369540c6c248025283cb3ff2b92827509e57e2b3541cb6",
+        "license_spdx": "LicenseRef-SAM",
+        "license_approved": false,
+        "supported_devices": ["cuda"],
+        "precision": "float16"
+      },
+      "weights_path": "../../weights/sam3/sam3.1_multiplex.pt"
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "reviews": [
+    {
+      "component": "facebook/sam3.1@2026-03-27",
+      "license": "SAM License",
+      "gate": "L5",
+      "status": "pending",
+      "production_approved": false,
+      "source": "https://huggingface.co/facebook/sam3.1/blob/main/LICENSE"
+    }
+  ]
+}

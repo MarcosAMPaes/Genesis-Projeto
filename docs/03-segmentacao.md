@@ -15,6 +15,8 @@ Objetivo do estágio: da imagem retificada ao **polígono simples, válido e fie
 
 Método de decisão: rodar todos no **conjunto de validação anotado** (≥ 30 fragmentos: granito claro/escuro, mármore com veios, quartzito, superfícies polidas e brutas); escolher o mais leve com IoU > 0,95 e Hausdorff < 2 mm. Registrar a decisão no doc 01.
 
+Estado de integração em 19/07/2026: o SAM 3.1 permanece candidato exclusivamente científico. O checkpoint oficial `sam3.1_multiplex.pt` está registrado por SHA-256, mas a SAM License ainda não passou pelo gate L5 e o carregamento do checkpoint 3.1 para inferência de imagem não é reproduzível com o código público (issue upstream facebookresearch/sam3#526). Por isso o runtime falha fechado: somente Linux/CUDA e prompt conceitual são aceitos no contrato, mas nenhuma inferência é liberada até existirem revisão de código, versão PyTorch e imagem de execução pinadas por digest. O bloqueio não afeta a avaliação de BiRefNet, SAM 2.1 e chroma, e o SAM 3.1 não pode vencer D1 nesse estado.
+
 ## 3.2 Estratégia de prompt e cena
 
 - **Fundo controlado resolve metade do problema**: superfície fosca de cor improvável em rocha (verde ou azul fosco). Rocha polida reflete — iluminação difusa (LED 3000–6500K ajustável) e fundo fosco reduzem os dois modos de falha dominantes (reflexo especular e veio confundido com fundo);

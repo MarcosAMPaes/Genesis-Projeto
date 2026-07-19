@@ -20,7 +20,12 @@ from petra.contracts import (
     SessionMeta,
 )
 from petra.errors import ErrorCode, PetraError
-from petra.segmentation.adapters import BiRefNetSegmenter, ChromaSegmenter, Sam2Segmenter
+from petra.segmentation.adapters import (
+    BiRefNetSegmenter,
+    ChromaSegmenter,
+    Sam2Segmenter,
+    Sam31Segmenter,
+)
 from petra.segmentation.registry import DeviceResolver, ModelRegistry
 
 pytestmark = pytest.mark.unit
@@ -186,6 +191,35 @@ def test_sam2_adapter_supports_point_and_box_without_silent_prompt_conversion() 
     assert runtime.prompts == [point_prompt, box_prompt]
     with pytest.raises(ValueError, match="points or box"):
         segmenter.segment(image, ConceptPrompt(concept="stone fragment"))
+
+
+def test_sam31_is_fail_closed_to_linux_cuda_concept_and_pending_license() -> None:
+    class FakeRuntime:
+        def predict(self, image_rgb: np.ndarray, concept: str) -> list[tuple[np.ndarray, float]]:
+            assert concept == "stone fragment"
+            mask = np.zeros(image_rgb.shape[:2], dtype=np.bool_)
+            mask[3:12, 4:16] = True
+            return [(mask, 0.95)]
+
+    registry = ModelRegistry.from_json(Path("config/models/registry.json"))
+    descriptor = registry.entry("sam3.1-multiplex").descriptor
+    with pytest.raises(PetraError) as license_error:
+        registry.verify("sam3.1-multiplex")
+    assert license_error.value.code == ErrorCode.LICENSE_NOT_APPROVED
+    with pytest.raises(PetraError, match="Linux and CUDA"):
+        Sam31Segmenter(descriptor, FakeRuntime(), device="cpu", platform_name="Windows")
+
+    segmenter = Sam31Segmenter(descriptor, FakeRuntime(), device="cuda", platform_name="Linux")
+    image = np.zeros((20, 24, 3), dtype=np.uint8)
+    prediction = segmenter.segment(image, ConceptPrompt(concept="stone fragment"))[0]
+    assert prediction.score == pytest.approx(0.95)
+    with pytest.raises(ValueError, match="concept"):
+        segmenter.segment(image, AutoPrompt())
+
+    runtime_config = json.loads(Path("config/models/sam3.1-runtime.json").read_text())
+    assert runtime_config["status"] == "blocked"
+    assert runtime_config["code_revision"] is None
+    assert runtime_config["container_image_digest"] is None
 
 
 def test_segment_run_cli_emits_metric_geometry_with_chroma(tmp_path: Path) -> None:
