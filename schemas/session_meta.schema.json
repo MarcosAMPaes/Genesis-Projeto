@@ -1,0 +1,211 @@
+{
+  "$defs": {
+    "Matrix3x3": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        }
+      ],
+      "type": "array"
+    },
+    "UlidString": {
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "aruco_ids": {
+      "items": {
+        "type": "integer"
+      },
+      "minItems": 4,
+      "title": "Aruco Ids",
+      "type": "array"
+    },
+    "background": {
+      "minLength": 1,
+      "title": "Background",
+      "type": "string"
+    },
+    "calib_profile_id": {
+      "$ref": "#/$defs/UlidString"
+    },
+    "coordinate_frame": {
+      "const": "bottom_left_x_right_y_up_mm",
+      "title": "Coordinate Frame",
+      "type": "string"
+    },
+    "homography": {
+      "$ref": "#/$defs/Matrix3x3"
+    },
+    "interpolator": {
+      "enum": [
+        "nearest",
+        "linear",
+        "cubic",
+        "lanczos4"
+      ],
+      "title": "Interpolator",
+      "type": "string"
+    },
+    "lidar_divergence_pct": {
+      "minimum": 0,
+      "title": "Lidar Divergence Pct",
+      "type": "number"
+    },
+    "native_gsd_mm_px": {
+      "exclusiveMinimum": 0,
+      "title": "Native Gsd Mm Px",
+      "type": "number"
+    },
+    "output_gsd_mm_px": {
+      "exclusiveMinimum": 0,
+      "title": "Output Gsd Mm Px",
+      "type": "number"
+    },
+    "parallax_factor": {
+      "exclusiveMinimum": 0,
+      "title": "Parallax Factor",
+      "type": "number"
+    },
+    "rectified_image": {
+      "minLength": 1,
+      "title": "Rectified Image",
+      "type": "string"
+    },
+    "rectified_img_size": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        }
+      ],
+      "title": "Rectified Img Size",
+      "type": "array"
+    },
+    "reference_plane_height_mm": {
+      "minimum": 0,
+      "title": "Reference Plane Height Mm",
+      "type": "number"
+    },
+    "resample_ratio": {
+      "description": "output_gsd_mm_px / native_gsd_mm_px",
+      "exclusiveMinimum": 0,
+      "title": "Resample Ratio",
+      "type": "number"
+    },
+    "residual_check_mm": {
+      "maximum": 1.0,
+      "minimum": 0,
+      "title": "Residual Check Mm",
+      "type": "number"
+    },
+    "scale_mm_px": {
+      "exclusiveMinimum": 0,
+      "title": "Scale Mm Px",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "session_id": {
+      "$ref": "#/$defs/UlidString"
+    },
+    "source_image": {
+      "minLength": 1,
+      "title": "Source Image",
+      "type": "string"
+    },
+    "thickness_mm": {
+      "exclusiveMinimum": 0,
+      "title": "Thickness Mm",
+      "type": "number"
+    },
+    "undistorted": {
+      "const": true,
+      "title": "Undistorted",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id",
+    "calib_profile_id",
+    "source_image",
+    "rectified_image",
+    "undistorted",
+    "scale_mm_px",
+    "homography",
+    "aruco_ids",
+    "thickness_mm",
+    "background",
+    "residual_check_mm",
+    "native_gsd_mm_px",
+    "output_gsd_mm_px",
+    "resample_ratio",
+    "rectified_img_size",
+    "reference_plane_height_mm",
+    "parallax_factor",
+    "lidar_divergence_pct",
+    "coordinate_frame",
+    "interpolator"
+  ],
+  "title": "SessionMeta",
+  "type": "object"
+}

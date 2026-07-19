@@ -1,0 +1,158 @@
+{
+  "$defs": {
+    "AutoPrompt": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "auto",
+          "default": "auto",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "title": "AutoPrompt",
+      "type": "object"
+    },
+    "BBox2D": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "type": "array"
+    },
+    "BoxPrompt": {
+      "additionalProperties": false,
+      "properties": {
+        "box": {
+          "$ref": "#/$defs/BBox2D"
+        },
+        "kind": {
+          "const": "box",
+          "default": "box",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "box"
+      ],
+      "title": "BoxPrompt",
+      "type": "object"
+    },
+    "ConceptPrompt": {
+      "additionalProperties": false,
+      "properties": {
+        "concept": {
+          "minLength": 1,
+          "title": "Concept",
+          "type": "string"
+        },
+        "kind": {
+          "const": "concept",
+          "default": "concept",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "concept"
+      ],
+      "title": "ConceptPrompt",
+      "type": "object"
+    },
+    "Point2D": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "type": "array"
+    },
+    "PointsPrompt": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "points",
+          "default": "points",
+          "title": "Kind",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/PromptPoint"
+          },
+          "minItems": 1,
+          "title": "Points",
+          "type": "array"
+        }
+      },
+      "required": [
+        "points"
+      ],
+      "title": "PointsPrompt",
+      "type": "object"
+    },
+    "PromptPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "enum": [
+            0,
+            1
+          ],
+          "title": "Label",
+          "type": "integer"
+        },
+        "point": {
+          "$ref": "#/$defs/Point2D"
+        }
+      },
+      "required": [
+        "point",
+        "label"
+      ],
+      "title": "PromptPoint",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "auto": "#/$defs/AutoPrompt",
+      "box": "#/$defs/BoxPrompt",
+      "concept": "#/$defs/ConceptPrompt",
+      "points": "#/$defs/PointsPrompt"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/AutoPrompt"
+    },
+    {
+      "$ref": "#/$defs/PointsPrompt"
+    },
+    {
+      "$ref": "#/$defs/BoxPrompt"
+    },
+    {
+      "$ref": "#/$defs/ConceptPrompt"
+    }
+  ]
+}

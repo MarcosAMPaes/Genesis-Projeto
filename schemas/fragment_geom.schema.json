@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "BBox2D": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "type": "array"
+    },
+    "Point2D": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "type": "array"
+    },
+    "UlidString": {
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "area_mm2": {
+      "exclusiveMinimum": 0,
+      "title": "Area Mm2",
+      "type": "number"
+    },
+    "bbox_mm": {
+      "$ref": "#/$defs/BBox2D"
+    },
+    "coordinate_frame": {
+      "const": "bottom_left_x_right_y_up_mm",
+      "title": "Coordinate Frame",
+      "type": "string"
+    },
+    "dp_epsilon_mm": {
+      "exclusiveMinimum": 0,
+      "title": "Dp Epsilon Mm",
+      "type": "number"
+    },
+    "fragment_id": {
+      "$ref": "#/$defs/UlidString"
+    },
+    "mask_path": {
+      "minLength": 1,
+      "title": "Mask Path",
+      "type": "string"
+    },
+    "n_points": {
+      "maximum": 1000,
+      "minimum": 100,
+      "title": "N Points",
+      "type": "integer"
+    },
+    "photo_path": {
+      "minLength": 1,
+      "title": "Photo Path",
+      "type": "string"
+    },
+    "polygon_mm": {
+      "items": {
+        "$ref": "#/$defs/Point2D"
+      },
+      "maxItems": 1001,
+      "minItems": 101,
+      "title": "Polygon Mm",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seg_model": {
+      "minLength": 1,
+      "title": "Seg Model",
+      "type": "string"
+    },
+    "seg_model_revision": {
+      "minLength": 1,
+      "title": "Seg Model Revision",
+      "type": "string"
+    },
+    "seg_score": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Seg Score",
+      "type": "number"
+    },
+    "session_id": {
+      "$ref": "#/$defs/UlidString"
+    }
+  },
+  "required": [
+    "fragment_id",
+    "session_id",
+    "polygon_mm",
+    "area_mm2",
+    "bbox_mm",
+    "n_points",
+    "seg_model",
+    "seg_model_revision",
+    "seg_score",
+    "dp_epsilon_mm",
+    "photo_path",
+    "mask_path",
+    "coordinate_frame"
+  ],
+  "title": "FragmentGeom",
+  "type": "object"
+}

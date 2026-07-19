@@ -1,0 +1,296 @@
+{
+  "$defs": {
+    "CalibrationImage": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "CalibrationImage",
+      "type": "object"
+    },
+    "ExcludedCalibrationImage": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "reason"
+      ],
+      "title": "ExcludedCalibrationImage",
+      "type": "object"
+    },
+    "Matrix3x3": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        },
+        {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "type": "array"
+        }
+      ],
+      "type": "array"
+    },
+    "PoseResidual": {
+      "additionalProperties": false,
+      "properties": {
+        "image_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "rms_px": {
+          "minimum": 0,
+          "title": "Rms Px",
+          "type": "number"
+        },
+        "rvec": {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Rvec",
+          "type": "array"
+        },
+        "tvec": {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Tvec",
+          "type": "array"
+        }
+      },
+      "required": [
+        "image_sha256",
+        "rms_px",
+        "rvec",
+        "tvec"
+      ],
+      "title": "PoseResidual",
+      "type": "object"
+    },
+    "Sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "UlidString": {
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "type": "string"
+    },
+    "UtcDateTime": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Perfil intrinseco aceito; tentativas reprovadas usam relatorio diagnostico.",
+  "properties": {
+    "K": {
+      "$ref": "#/$defs/Matrix3x3"
+    },
+    "bench_config_hash": {
+      "$ref": "#/$defs/Sha256"
+    },
+    "content_sha256": {
+      "$ref": "#/$defs/Sha256"
+    },
+    "created_at": {
+      "$ref": "#/$defs/UtcDateTime"
+    },
+    "device": {
+      "minLength": 1,
+      "title": "Device",
+      "type": "string"
+    },
+    "dist": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "title": "Dist",
+      "type": "array"
+    },
+    "excluded_images": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ExcludedCalibrationImage"
+      },
+      "title": "Excluded Images",
+      "type": "array"
+    },
+    "id": {
+      "$ref": "#/$defs/UlidString"
+    },
+    "img_size": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        }
+      ],
+      "title": "Img Size",
+      "type": "array"
+    },
+    "included_images": {
+      "items": {
+        "$ref": "#/$defs/CalibrationImage"
+      },
+      "minItems": 20,
+      "title": "Included Images",
+      "type": "array"
+    },
+    "lens": {
+      "minLength": 1,
+      "title": "Lens",
+      "type": "string"
+    },
+    "pose_residuals": {
+      "items": {
+        "$ref": "#/$defs/PoseResidual"
+      },
+      "minItems": 20,
+      "title": "Pose Residuals",
+      "type": "array"
+    },
+    "rms_px": {
+      "exclusiveMaximum": 0.5,
+      "minimum": 0,
+      "title": "Rms Px",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "z_mm_lidar": {
+      "exclusiveMinimum": 0,
+      "title": "Z Mm Lidar",
+      "type": "number"
+    }
+  },
+  "required": [
+    "id",
+    "content_sha256",
+    "device",
+    "lens",
+    "K",
+    "dist",
+    "rms_px",
+    "img_size",
+    "z_mm_lidar",
+    "created_at",
+    "bench_config_hash",
+    "included_images",
+    "pose_residuals"
+  ],
+  "title": "CalibProfile",
+  "type": "object"
+}
