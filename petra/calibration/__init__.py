@@ -9,6 +9,13 @@ from petra.calibration.intrinsic import (
     PoseCalibrationResult,
     calibrate_intrinsics,
 )
+from petra.calibration.parallax import (
+    LidarCheck,
+    check_lidar_divergence,
+    correct_dimension_mm,
+    parallax_factor,
+    resolve_thickness_mm,
+)
 from petra.calibration.profile import (
     CalibrationAttemptReport,
     build_profile,
@@ -17,6 +24,7 @@ from petra.calibration.profile import (
     persist_attempt_report,
     persist_profile,
     sha256_file,
+    verify_profile_hash,
 )
 from petra.calibration.rectify import (
     CharucoBoardConfig,
@@ -38,6 +46,7 @@ __all__ = [
     "CharucoDetection",
     "CheckerboardConfig",
     "IntrinsicCalibrationResult",
+    "LidarCheck",
     "PoseCalibrationResult",
     "PoseObservation",
     "RectificationResult",
@@ -49,15 +58,20 @@ __all__ = [
     "build_session_meta",
     "calibrate_intrinsics",
     "canonical_profile_hash",
+    "check_lidar_divergence",
+    "correct_dimension_mm",
     "create_calibration_artifacts",
     "detect_charuco",
     "detect_checkerboard",
     "homography_jacobian",
     "native_gsd_at",
     "object_points",
+    "parallax_factor",
     "persist_attempt_report",
     "persist_profile",
     "plan_rectification",
     "rectify_image",
+    "resolve_thickness_mm",
     "sha256_file",
+    "verify_profile_hash",
 ]

@@ -139,6 +139,14 @@ def _atomic_write(path: Path, content: str) -> None:
 
 
 def persist_profile(profile: CalibProfile, path: Path) -> None:
+    verify_profile_hash(profile)
+    payload: dict[str, Any] = profile.model_dump(mode="json")
+    schema = CalibProfile.model_json_schema(mode="serialization")
+    validator_for(schema)(schema).validate(payload)
+    _atomic_write(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def verify_profile_hash(profile: CalibProfile) -> None:
     expected_hash = canonical_profile_hash(profile)
     if profile.content_sha256 != expected_hash:
         raise PetraError(
@@ -146,10 +154,6 @@ def persist_profile(profile: CalibProfile, path: Path) -> None:
             "calibration profile content hash is invalid",
             {"expected": expected_hash, "actual": profile.content_sha256},
         )
-    payload: dict[str, Any] = profile.model_dump(mode="json")
-    schema = CalibProfile.model_json_schema(mode="serialization")
-    validator_for(schema)(schema).validate(payload)
-    _atomic_write(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
 def persist_attempt_report(report: CalibrationAttemptReport, path: Path) -> None:
