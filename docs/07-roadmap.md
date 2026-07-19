@@ -75,5 +75,5 @@ D pode começar antes de C estar completo (usar polígonos sintéticos + ESICUP)
 1. `main` sempre com pipeline end-to-end verde (teste de fumaça semanal);
 2. Benchmark + changelog por release; regressão bloqueia;
 3. Decisões D1–D6 fechadas viram registro no doc 01 (data + critério usado);
-4. Dados fora do git (S3); código, esquemas, curvas e resultados de benchmark dentro;
+4. Dados operacionais, sessões completas e pesos fora do Git (S3). Exceção deliberada: somente o corpus pequeno e congelado de validação pode usar Git LFS, com manifesto+SHA-256, orçamento de 80% da quota, smudge desabilitado em PR e fetch restrito aos workflows de modelo/benchmark/físico; se exceder o orçamento, usar manifesto+hash com origem S3. Código, esquemas, curvas e resultados de benchmark ficam no Git;
 5. Todo resultado relevante (curva do ε, comparativo SAM, ganho do SA) sai em formato exportável — vira evidência nos relatórios de `/gestao` sem retrabalho.

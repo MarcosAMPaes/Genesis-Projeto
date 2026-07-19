@@ -1,0 +1,29 @@
+name: model-benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Suite que requer o corpus congelado
+        required: true
+        type: choice
+        options: [model, benchmark, physical]
+
+env:
+  GIT_LFS_SKIP_SMUDGE: "1"
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: git lfs fetch --include="data/validation/**" --exclude=""
+      - run: git lfs checkout data/validation
+      - run: uv sync --group dev
+      - run: uv run python scripts/lint_validation_corpus.py --require-frozen
+      - run: uv run pytest -m "${{ inputs.suite }}"
