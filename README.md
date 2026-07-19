@@ -122,7 +122,7 @@ Genesis-Projeto/
 **Visão computacional:** OpenCV (calibração, contornos, ArUco) · PyTorch + SAM (segmentação)
 **Geometria:** Shapely 2.x (validação, métricas) · pyclipper/Clipper2 (offset de junta, Minkowski, µm inteiros)
 **Dados:** SQLite (catálogo local) · AWS S3 (backup) · AWS EC2 g5.xlarge (lotes GPU)
-**Hardware:** iPhone 15 Pro (captura 48 MP + LiDAR) · bancada de captura com iluminação LED controlada
+**Hardware:** iPhone 17 Pro (captura 48 MP + LiDAR) · bancada de captura com iluminação LED controlada
 
 ## 🗺️ Roadmap
 
