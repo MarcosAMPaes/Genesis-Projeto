@@ -5,6 +5,11 @@
       "component": "opencv-python-headless",
       "spdx": "Apache-2.0",
       "scope": "chroma baseline and geometric processing"
+    },
+    {
+      "component": "ZhengPeng7/BiRefNet@f6b715597b3bd22a03b2472ba81791dcbced6746",
+      "spdx": "MIT",
+      "scope": "automatic segmentation candidate; transitive audit required by model workflow"
     }
   ]
 }

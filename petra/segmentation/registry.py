@@ -77,6 +77,12 @@ class ModelRegistry:
                 {"expected": descriptor.weights_sha256, "actual": digest},
             )
 
+    def weights_path(self, name: str) -> Path:
+        entry = self.entry(name)
+        if entry.weights_path is None:
+            raise PetraError(ErrorCode.WEIGHTS_MISSING, f"weights path is absent: {name}")
+        return (self.base_dir / entry.weights_path).resolve()
+
     def verify_all(self) -> dict[str, str]:
         results: dict[str, str] = {}
         for name in sorted(self._entries):

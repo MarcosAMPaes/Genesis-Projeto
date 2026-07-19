@@ -12,7 +12,7 @@ from PIL import Image
 from petra.cli import main
 from petra.contracts import AutoPrompt, BoxPrompt, ModelDescriptor, SessionMeta
 from petra.errors import ErrorCode, PetraError
-from petra.segmentation.adapters import ChromaSegmenter
+from petra.segmentation.adapters import BiRefNetSegmenter, ChromaSegmenter
 from petra.segmentation.registry import DeviceResolver, ModelRegistry
 
 pytestmark = pytest.mark.unit
@@ -81,8 +81,22 @@ def test_registry_and_device_resolver_never_fallback_silently(
 ) -> None:
     registry = ModelRegistry.from_json(Path("config/models/registry.json"))
     registry.verify("chroma")
-    assert registry.verify_all() == {"chroma": "verified"}
-    assert main(["models", "verify", "--registry", "config/models/registry.json"]) == 0
+    results = registry.verify_all()
+    assert results["chroma"] == "verified"
+    assert "WEIGHTS_MISSING" in results["birefnet-general"]
+    assert (
+        main(
+            [
+                "models",
+                "verify",
+                "--registry",
+                "config/models/registry.json",
+                "--model",
+                "chroma",
+            ]
+        )
+        == 0
+    )
 
     missing_registry = tmp_path / "registry.json"
     missing_registry.write_text(
@@ -117,6 +131,24 @@ def test_registry_and_device_resolver_never_fallback_silently(
         DeviceResolver.resolve("cuda", ("cpu", "cuda"))
     assert unavailable.value.code == ErrorCode.MODEL_UNAVAILABLE
     assert DeviceResolver.resolve("auto", ("cpu", "cuda")) == "cpu"
+
+
+def test_birefnet_adapter_is_local_and_numpy2_compatible_at_contract_boundary() -> None:
+    class FakeRuntime:
+        def predict(self, image_rgb: np.ndarray) -> tuple[np.ndarray, float]:
+            return np.asarray(image_rgb[:, :, 0] > 100, dtype=np.bool_), 0.97
+
+    descriptor = (
+        ModelRegistry.from_json(Path("config/models/registry.json"))
+        .entry("birefnet-general")
+        .descriptor
+    )
+    image = np.zeros((32, 32, 3), dtype=np.uint8)
+    image[8:24, 8:24, 0] = 255
+    prediction = BiRefNetSegmenter(descriptor, FakeRuntime()).segment(image, AutoPrompt())[0]
+    assert np.__version__.startswith("2.")
+    assert prediction.score == pytest.approx(0.97)
+    assert np.count_nonzero(prediction.mask) == 16 * 16
 
 
 def test_segment_run_cli_emits_metric_geometry_with_chroma(tmp_path: Path) -> None:

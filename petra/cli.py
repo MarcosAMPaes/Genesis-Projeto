@@ -31,7 +31,12 @@ from petra.calibration.validation import (
 )
 from petra.contracts import AutoPrompt, CalibProfile, SessionMeta
 from petra.errors import ErrorCode, PetraError
-from petra.segmentation.adapters import ChromaSegmenter
+from petra.segmentation.adapters import (
+    BiRefNetSegmenter,
+    ChromaSegmenter,
+    Segmenter,
+    TransformersBiRefNetRuntime,
+)
 from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
 from petra.segmentation.postprocess import postprocess_instances
 from petra.segmentation.registry import DeviceResolver, ModelRegistry
@@ -152,7 +157,15 @@ def _calibrate_validate_dims(args: argparse.Namespace) -> int:
 
 def _models_verify(args: argparse.Namespace) -> int:
     try:
-        results = ModelRegistry.from_json(Path(args.registry)).verify_all()
+        registry = ModelRegistry.from_json(Path(args.registry))
+        selected = args.model or [entry.descriptor.name for entry in registry.document.models]
+        results: dict[str, str] = {}
+        for name in selected:
+            try:
+                registry.verify(name)
+                results[name] = "verified"
+            except PetraError as error:
+                results[name] = str(error)
         print(json.dumps(results, indent=2, sort_keys=True))
         return 0 if all(value == "verified" for value in results.values()) else 4
     except (OSError, ValueError) as error:
@@ -166,21 +179,28 @@ def _segment_run(args: argparse.Namespace) -> int:
         registry.verify(args.backend)
         entry = registry.entry(args.backend)
         device = DeviceResolver.resolve(args.device, entry.descriptor.supported_devices)
-        if entry.descriptor.family != "chroma":
+        session = SessionMeta.model_validate_json(
+            Path(args.session_meta).read_text(encoding="utf-8")
+        )
+        segmenter: Segmenter
+        if entry.descriptor.family == "chroma":
+            segmenter = ChromaSegmenter(entry.descriptor, background=session.background)
+        elif entry.descriptor.family == "birefnet":
+            runtime = TransformersBiRefNetRuntime(
+                str(registry.weights_path(args.backend).parent), device=device
+            )
+            segmenter = BiRefNetSegmenter(entry.descriptor, runtime)
+        else:
             raise PetraError(
                 ErrorCode.MODEL_UNAVAILABLE,
                 f"adapter is not installed in this increment: {args.backend}",
             )
-        session = SessionMeta.model_validate_json(
-            Path(args.session_meta).read_text(encoding="utf-8")
-        )
         image_rgb = np.asarray(Image.open(args.image).convert("RGB"), dtype=np.uint8)
         marker_mask = (
             np.asarray(Image.open(args.marker_mask).convert("L"), dtype=np.uint8)
             if args.marker_mask
             else None
         )
-        segmenter = ChromaSegmenter(entry.descriptor, background=session.background)
         predictions = segmenter.segment(image_rgb, AutoPrompt())
         processed = postprocess_instances(
             [prediction.mask for prediction in predictions],
@@ -315,6 +335,7 @@ def build_parser() -> argparse.ArgumentParser:
     model_commands = models.add_subparsers(dest="models_command")
     verify = model_commands.add_parser("verify", help="verifica pesos e licencas")
     verify.add_argument("--registry", default="config/models/registry.json")
+    verify.add_argument("--model", action="append")
     verify.set_defaults(handler=_models_verify)
     return parser
 

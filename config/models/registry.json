@@ -14,6 +14,20 @@
         "precision": "uint8"
       },
       "weights_path": null
+    },
+    {
+      "descriptor": {
+        "schema_version": "1.0.0",
+        "name": "birefnet-general",
+        "family": "birefnet",
+        "revision": "hf:f6b715597b3bd22a03b2472ba81791dcbced6746",
+        "weights_sha256": "77277264c0e8c74149d3ff2fade4fd8176965b7108f3c5fc3b8c9c811edb4519",
+        "license_spdx": "MIT",
+        "license_approved": true,
+        "supported_devices": ["cpu", "mps", "cuda"],
+        "precision": "float32"
+      },
+      "weights_path": "../../weights/birefnet/model.safetensors"
     }
   ]
 }
