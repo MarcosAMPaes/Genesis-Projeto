@@ -69,10 +69,10 @@ Convenções globais: unidade canônica **mm** (float64) a partir da saída de A
 | | Contrato |
 |---|---|
 | **Entrada** | Imagem retificada + `session_meta` + modo (`auto` \| `prompt{points/box/concept}`) |
-| **Saída** | Por peça: `fragment_geom.json`: `{fragment_id, polygon_mm: [[x,y],...], area_mm2, bbox_mm, n_points, seg_model, seg_score, dp_epsilon_mm, mask_path}` |
+| **Saída** | Por peça: `fragment_geom.json`: `{fragment_id, polygon_mm: [[x,y],...], area_mm2, bbox_mm, n_points, quality_warnings, seg_model, seg_score, dp_epsilon_mm, mask_path}` |
 | **Gate (rejeição com log)** | Máscara toca borda da imagem; área fora de [25 cm², 1 m²]; >1 componente grande; polígono inválido após `buffer(0)`; `area_poly/area_mask ∉ [0.99, 1.01]` |
 | **Pós-processamento fixo** | Maior componente → fill holes → morfologia leve (≤5 px) → `findContours(RETR_EXTERNAL, CHAIN_APPROX_NONE)` → `approxPolyDP(epsilon_px)` → mm. **Conversão do ε:** `epsilon_px = ε_mm / scale_mm_px` (com ε_mm = 0,5 e `scale_mm_px` em mm/px; o `epsilon` do OpenCV está na unidade das coordenadas do contorno, i.e. pixels) |
-| **Invariante** | 100–1000 vértices por peça; Hausdorff(contorno, polígono) ≤ ε por construção |
+| **Invariante** | 3–5000 vértices distintos por peça (4–5001 coordenadas no anel fechado); 100–1000 é faixa esperada informativa. Contagens 3–99 e 1001–5000 são aceitas com `VERTEX_COUNT_BELOW_EXPECTED` e `VERTEX_COUNT_ABOVE_EXPECTED`, respectivamente; Hausdorff(contorno, polígono) ≤ ε por construção |
 
 ### Módulo C — Catálogo
 

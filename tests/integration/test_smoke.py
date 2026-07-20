@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -37,16 +36,7 @@ def _write_fixture(root: Path) -> tuple[Path, Path, Path]:
     image = np.zeros((1000, 1000, 3), dtype=np.uint8)
     image[:, :] = (0, 150, 0)
     image[650:950, 50:450] = cv2.cvtColor(board, cv2.COLOR_GRAY2BGR)
-    fragment_points = []
-    for index in range(360):
-        angle = 2 * math.pi * index / 360
-        radius = 280 if index % 2 == 0 else 265
-        fragment_points.append(
-            [
-                round(620 + radius * math.cos(angle)),
-                round(350 + radius * math.sin(angle)),
-            ]
-        )
+    fragment_points = [[340, 80], [900, 120], [850, 600], [380, 570]]
     cv2.fillPoly(image, [np.asarray(fragment_points, dtype=np.int32)], (110, 110, 110))
     image_path = root / "raw.png"
     assert cv2.imwrite(str(image_path), image)
@@ -142,6 +132,11 @@ def test_frozen_synthetic_session_runs_a_to_b_idempotently(tmp_path: Path) -> No
     )
     assert geometry.seg_model == "chroma"
     assert geometry.area_mm2 > 25_000
+    assert geometry.n_points < 100
+    assert geometry.quality_warnings == ("VERTEX_COUNT_BELOW_EXPECTED",)
+    assert report["quality_warnings"] == {
+        report["fragments"][0]: ["VERTEX_COUNT_BELOW_EXPECTED"]
+    }
 
     assert main(arguments) == 0
     assert (output_dir / "process-session.json").read_bytes() == first_report

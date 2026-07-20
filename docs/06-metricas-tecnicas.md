@@ -26,7 +26,7 @@ Metas numéricas por estágio + como medir. Benchmarks rodam a cada release; res
 
 | Métrica | Meta | Protocolo |
 |---|---|---|
-| Redução de pontos | > 95% (~10⁴ → 100–400) | Contagem antes/depois |
+| Redução de pontos | > 95%; ~10⁴ → 100–400 é faixa esperada, não vinculante | Contagem antes/depois; formas retas podem ter 3–99 vértices e redução próxima de 99,9% sem reprovação |
 | Desvio de área | < 1% | área(simplificado) ÷ área(máscara) |
 | Desvio máximo local | ≤ ε = 0,5 mm (por construção DP) | Verificação amostral + curva ε publicada no benchmark |
 

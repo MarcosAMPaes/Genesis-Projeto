@@ -11,11 +11,13 @@ from petra.contracts.segmentation import (
     BoxPrompt,
     ConceptPrompt,
     FragmentGeom,
+    GeometryQualityWarning,
     MaskPrediction,
     ModelDescriptor,
     PointsPrompt,
     PromptPoint,
     PromptSpec,
+    vertex_count_quality_warnings,
 )
 
 __all__ = [
@@ -27,6 +29,7 @@ __all__ = [
     "ConceptPrompt",
     "ExcludedCalibrationImage",
     "FragmentGeom",
+    "GeometryQualityWarning",
     "MaskPrediction",
     "ModelDescriptor",
     "PointsPrompt",
@@ -34,4 +37,5 @@ __all__ = [
     "PromptPoint",
     "PromptSpec",
     "SessionMeta",
+    "vertex_count_quality_warnings",
 ]

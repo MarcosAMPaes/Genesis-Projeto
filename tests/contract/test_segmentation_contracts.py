@@ -5,8 +5,15 @@ import math
 import numpy as np
 import pytest
 from pydantic import TypeAdapter, ValidationError
+from shapely.geometry import Polygon
 
-from petra.contracts import FragmentGeom, MaskPrediction, ModelDescriptor, PromptSpec
+from petra.contracts import (
+    FragmentGeom,
+    MaskPrediction,
+    ModelDescriptor,
+    PromptSpec,
+    vertex_count_quality_warnings,
+)
 
 ULID_FRAGMENT = "01KXY0JVMP1V3TZ9XDMXQQ6GMT"
 ULID_SESSION = "01KXY0GVMP1V3TZ9XDMXQQ6GMR"
@@ -23,22 +30,18 @@ def regular_polygon(n_points: int = 100) -> list[list[float]]:
     return [*points, points[0]]
 
 
-def valid_fragment_data() -> dict[str, object]:
-    polygon = regular_polygon()
-    area = 0.5 * abs(
-        sum(
-            polygon[index][0] * polygon[index + 1][1] - polygon[index + 1][0] * polygon[index][1]
-            for index in range(len(polygon) - 1)
-        )
-    )
+def valid_fragment_data(n_points: int = 100) -> dict[str, object]:
+    polygon = regular_polygon(n_points)
+    shape = Polygon(polygon)
     return {
         "schema_version": "1.0.0",
         "fragment_id": ULID_FRAGMENT,
         "session_id": ULID_SESSION,
         "polygon_mm": polygon,
-        "area_mm2": area,
-        "bbox_mm": [50.0, 50.0, 150.0, 150.0],
-        "n_points": 100,
+        "area_mm2": shape.area,
+        "bbox_mm": list(shape.bounds),
+        "n_points": n_points,
+        "quality_warnings": list(vertex_count_quality_warnings(n_points)),
         "seg_model": "chroma",
         "seg_model_revision": "opencv-5.0.0",
         "seg_score": 1.0,
@@ -66,6 +69,57 @@ def chroma_descriptor() -> ModelDescriptor:
 def test_fragment_geometry_is_closed_valid_ccw_and_consistent() -> None:
     fragment = FragmentGeom.model_validate(valid_fragment_data())
     assert fragment.n_points == 100
+    assert fragment.quality_warnings == ()
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    ("n_points", "expected_warning"),
+    [
+        (3, ("VERTEX_COUNT_BELOW_EXPECTED",)),
+        (99, ("VERTEX_COUNT_BELOW_EXPECTED",)),
+        (100, ()),
+        (1000, ()),
+        (1001, ("VERTEX_COUNT_ABOVE_EXPECTED",)),
+        (5000, ("VERTEX_COUNT_ABOVE_EXPECTED",)),
+    ],
+)
+def test_fragment_geometry_accepts_vertex_boundaries_with_expected_warning(
+    n_points: int, expected_warning: tuple[str, ...]
+) -> None:
+    fragment = FragmentGeom.model_validate(valid_fragment_data(n_points))
+    assert fragment.n_points == n_points
+    assert fragment.quality_warnings == expected_warning
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize("n_points", [2, 5001])
+def test_fragment_geometry_rejects_hard_vertex_limits(n_points: int) -> None:
+    if n_points == 2:
+        data = valid_fragment_data(3)
+        data.update(
+            polygon_mm=[[0.0, 0.0], [1.0, 0.0], [0.0, 0.0]],
+            area_mm2=1.0,
+            bbox_mm=[0.0, 0.0, 1.0, 0.0],
+            n_points=2,
+        )
+    else:
+        data = valid_fragment_data(n_points)
+    with pytest.raises(ValidationError):
+        FragmentGeom.model_validate(data)
+
+
+@pytest.mark.contract
+def test_fragment_geometry_rejects_inconsistent_count_and_warning() -> None:
+    wrong_count = valid_fragment_data(3)
+    wrong_count["n_points"] = 4
+    with pytest.raises(ValidationError, match="n_points"):
+        FragmentGeom.model_validate(wrong_count)
+
+    missing_warning = valid_fragment_data(3)
+    missing_warning["quality_warnings"] = []
+    with pytest.raises(ValidationError, match="quality_warnings"):
+        FragmentGeom.model_validate(missing_warning)
 
 
 @pytest.mark.contract

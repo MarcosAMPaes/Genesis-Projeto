@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from ulid import ULID
 
 from petra.calibration.parallax import check_lidar_divergence, parallax_factor
@@ -26,7 +26,7 @@ from petra.calibration.rectify import (
 )
 from petra.calibration.undistort import Undistorter
 from petra.calibration.validation import environment_fingerprint
-from petra.contracts import CalibProfile, PromptSpec
+from petra.contracts import CalibProfile, GeometryQualityWarning, PromptSpec
 from petra.errors import ErrorCode, PetraError
 from petra.segmentation.factory import resolve_segmenter
 from petra.segmentation.geometry import extract_fragment_geometry, persist_fragment_geom
@@ -60,6 +60,9 @@ class ProcessSessionReport(BaseModel):
     lidar_divergence_pct: float
     lidar_warning: bool
     fragments: tuple[str, ...]
+    quality_warnings: dict[str, tuple[GeometryQualityWarning, ...]] = Field(
+        default_factory=dict
+    )
     rejections: tuple[PipelineRejection, ...]
     outputs_sha256: dict[str, str]
     sprint: Literal["S2"] = "S2"
@@ -237,6 +240,7 @@ def process_session(
             marker_mask=marker_mask,
         )
         fragments: list[str] = []
+        quality_warnings: dict[str, tuple[GeometryQualityWarning, ...]] = {}
         rejections = [
             PipelineRejection(
                 instance_index=item.instance_index,
@@ -264,7 +268,10 @@ def process_session(
                     fragment_id=fragment_id,
                 )
                 persist_fragment_geom(extraction.fragment, stage / geometry_relative)
-                fragments.append(geometry_relative.as_posix())
+                geometry_key = geometry_relative.as_posix()
+                fragments.append(geometry_key)
+                if extraction.fragment.quality_warnings:
+                    quality_warnings[geometry_key] = extraction.fragment.quality_warnings
             except PetraError as error:
                 rejections.append(
                     PipelineRejection(
@@ -291,6 +298,7 @@ def process_session(
             lidar_divergence_pct=lidar.divergence_pct,
             lidar_warning=lidar.warning,
             fragments=tuple(fragments),
+            quality_warnings=quality_warnings,
             rejections=tuple(rejections),
             outputs_sha256=output_hashes,
         )

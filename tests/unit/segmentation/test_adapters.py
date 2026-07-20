@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 
 import cv2
@@ -225,16 +224,7 @@ def test_sam31_is_fail_closed_to_linux_cuda_concept_and_pending_license() -> Non
 def test_segment_run_cli_emits_metric_geometry_with_chroma(tmp_path: Path) -> None:
     image = np.zeros((2200, 2200, 3), dtype=np.uint8)
     image[:, :] = [0, 150, 0]
-    points: list[list[int]] = []
-    for index in range(360):
-        angle = 2 * math.pi * index / 360
-        radius = 820 if index % 2 == 0 else 790
-        points.append(
-            [
-                round(1100 + radius * math.cos(angle)),
-                round(1100 + radius * math.sin(angle)),
-            ]
-        )
+    points = [[250, 400], [1850, 350], [1900, 1750], [300, 1850]]
     cv2.fillPoly(image, [np.asarray(points, dtype=np.int32)], (110, 110, 110))
     image_path = tmp_path / "rectified.png"
     Image.fromarray(image).save(image_path)
@@ -264,3 +254,6 @@ def test_segment_run_cli_emits_metric_geometry_with_chroma(tmp_path: Path) -> No
     assert len(report["accepted"]) == 1
     assert report["rejected"] == []
     assert Path(report["accepted"][0]).exists()
+    assert report["quality_warnings"] == {
+        report["accepted"][0]: ["VERTEX_COUNT_BELOW_EXPECTED"]
+    }

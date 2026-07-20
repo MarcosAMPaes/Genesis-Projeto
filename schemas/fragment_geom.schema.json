@@ -19,6 +19,13 @@
       ],
       "type": "array"
     },
+    "GeometryQualityWarning": {
+      "enum": [
+        "VERTEX_COUNT_BELOW_EXPECTED",
+        "VERTEX_COUNT_ABOVE_EXPECTED"
+      ],
+      "type": "string"
+    },
     "Point2D": {
       "maxItems": 2,
       "minItems": 2,
@@ -66,8 +73,8 @@
       "type": "string"
     },
     "n_points": {
-      "maximum": 1000,
-      "minimum": 100,
+      "maximum": 5000,
+      "minimum": 3,
       "title": "N Points",
       "type": "integer"
     },
@@ -80,9 +87,17 @@
       "items": {
         "$ref": "#/$defs/Point2D"
       },
-      "maxItems": 1001,
-      "minItems": 101,
+      "maxItems": 5001,
+      "minItems": 4,
       "title": "Polygon Mm",
+      "type": "array"
+    },
+    "quality_warnings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GeometryQualityWarning"
+      },
+      "title": "Quality Warnings",
       "type": "array"
     },
     "schema_version": {

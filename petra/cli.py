@@ -244,6 +244,7 @@ def _segment_run(args: argparse.Namespace) -> int:
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         accepted: list[str] = []
+        quality_warnings: dict[str, list[str]] = {}
         geometry_rejections: list[dict[str, object]] = []
         scores = {index: prediction.score for index, prediction in enumerate(predictions)}
         for item in processed.accepted:
@@ -263,7 +264,14 @@ def _segment_run(args: argparse.Namespace) -> int:
                 )
                 geometry_path = output_dir / f"{fragment_id}.fragment_geom.json"
                 persist_fragment_geom(extraction.fragment, geometry_path)
-                accepted.append(str(geometry_path))
+                geometry_key = str(geometry_path)
+                accepted.append(geometry_key)
+                if extraction.fragment.quality_warnings:
+                    quality_warnings[geometry_key] = list(extraction.fragment.quality_warnings)
+                    print(
+                        f"warning: {geometry_key}: "
+                        f"{', '.join(extraction.fragment.quality_warnings)}"
+                    )
             except PetraError as error:
                 geometry_rejections.append(
                     {
@@ -286,6 +294,7 @@ def _segment_run(args: argparse.Namespace) -> int:
             "backend": entry.descriptor.model_dump(mode="json"),
             "device": resolved.device,
             "accepted": accepted,
+            "quality_warnings": quality_warnings,
             "rejected": rejections,
         }
         (output_dir / "segmentation-run.json").write_text(
@@ -371,6 +380,8 @@ def _process_session(args: argparse.Namespace) -> int:
                 f"warning: {report.lidar_divergence_pct:.3f}% LiDAR divergence; "
                 "recalibration review required"
             )
+        for fragment_path, warnings in report.quality_warnings.items():
+            print(f"warning: {fragment_path}: {', '.join(warnings)}")
         return 0 if report.acceptance_state == "automated-accepted" else 3
     except (OSError, ValueError) as error:
         print(f"invalid input: {error}")

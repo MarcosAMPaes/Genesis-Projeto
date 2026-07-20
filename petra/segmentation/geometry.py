@@ -11,7 +11,13 @@ from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.geometry.polygon import orient
 from ulid import ULID
 
-from petra.contracts import FragmentGeom, SessionMeta
+from petra.contracts import (
+    FragmentGeom,
+    GeometryQualityWarning,
+    SessionMeta,
+    vertex_count_quality_warnings,
+)
+from petra.contracts.segmentation import MAX_POLYGON_VERTICES, MIN_POLYGON_VERTICES
 from petra.errors import ErrorCode, PetraError
 from petra.segmentation.contour import external_contour, simplify_contour
 from petra.segmentation.postprocess import ProcessedMask
@@ -26,6 +32,20 @@ class GeometryExtraction:
     area_ratio: float
     hausdorff_mm: float
     repaired: bool
+
+
+def _validate_vertex_count(n_points: int) -> tuple[GeometryQualityWarning, ...]:
+    if not MIN_POLYGON_VERTICES <= n_points <= MAX_POLYGON_VERTICES:
+        raise PetraError(
+            ErrorCode.POLYGON_VERTEX_COUNT,
+            "simplified polygon must contain 3 to 5000 vertices",
+            {
+                "n_points": n_points,
+                "minimum": MIN_POLYGON_VERTICES,
+                "maximum": MAX_POLYGON_VERTICES,
+            },
+        )
+    return vertex_count_quality_warnings(n_points)
 
 
 def _metric_points(
@@ -102,6 +122,7 @@ def extract_fragment_geometry(
         x_origin_px=x_origin_px,
         y_origin_px=y_origin_px,
     )
+    _validate_vertex_count(len(simplified_mm))
     polygon, repaired = repair_polygon(simplified_mm)
     polygon = orient(polygon, sign=1.0)
     if polygon.is_empty or polygon.area <= 0:
@@ -116,12 +137,7 @@ def extract_fragment_geometry(
         )
     exterior = list(polygon.exterior.coords)
     n_points = len(exterior) - 1
-    if not 100 <= n_points <= 1000:
-        raise PetraError(
-            ErrorCode.POLYGON_VERTEX_COUNT,
-            "simplified polygon must contain 100 to 1000 vertices",
-            {"n_points": n_points},
-        )
+    quality_warnings = _validate_vertex_count(n_points)
     hausdorff_mm = float(LineString(raw_mm).hausdorff_distance(LineString(exterior)))
     if hausdorff_mm > dp_epsilon_mm + 1e-9:
         raise PetraError(
@@ -138,6 +154,7 @@ def extract_fragment_geometry(
             "area_mm2": float(polygon.area),
             "bbox_mm": bbox,
             "n_points": n_points,
+            "quality_warnings": quality_warnings,
             "seg_model": seg_model,
             "seg_model_revision": seg_model_revision,
             "seg_score": seg_score,

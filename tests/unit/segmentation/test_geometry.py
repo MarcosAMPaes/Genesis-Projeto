@@ -61,6 +61,16 @@ def serrated_mask(teeth: int = 180) -> np.ndarray:
     return mask.astype(np.bool_)
 
 
+def triangle_mask() -> np.ndarray:
+    mask = np.zeros((2200, 2200), dtype=np.uint8)
+    cv2.fillConvexPoly(
+        mask,
+        np.asarray([[250, 1900], [1100, 250], [1950, 1900]], dtype=np.int32),
+        1,
+    )
+    return mask.astype(np.bool_)
+
+
 def processed_mask(mask: np.ndarray) -> ProcessedMask:
     metric_scale = 0.1 * 0.975
     return ProcessedMask(
@@ -100,6 +110,7 @@ def test_extracts_closed_valid_ccw_metric_polygon_and_persists(tmp_path: Path) -
     assert extraction.fragment.polygon_mm[0] == extraction.fragment.polygon_mm[-1]
     assert extraction.fragment.bbox_mm[0] == pytest.approx(0.0)
     assert extraction.fragment.bbox_mm[1] == pytest.approx(0.0)
+    assert extraction.fragment.quality_warnings == ()
 
     output = tmp_path / "fragment_geom.json"
     persist_fragment_geom(extraction.fragment, output)
@@ -114,23 +125,46 @@ def test_contour_uses_external_chain_none_and_dp_reduces_more_than_95_percent() 
     assert len(simplified) < len(raw) * 0.05
 
 
-def test_vertex_and_area_gates_reject_unfit_simplification() -> None:
-    square = np.zeros((1000, 1000), dtype=np.bool_)
-    square[100:900, 100:900] = True
-    small_session = session_meta().model_copy(
-        update={"rectified_img_size": (1000, 1000), "roi_mm": (0.0, 0.0, 100.0, 100.0)}
+def test_triangle_is_accepted_with_low_vertex_warning() -> None:
+    extraction = extract_fragment_geometry(
+        processed_mask(triangle_mask()),
+        session_meta(),
+        seg_model="chroma",
+        seg_model_revision="opencv",
+        seg_score=1.0,
+        photo_path="photo.png",
+        mask_path="mask.png",
     )
-    with pytest.raises(PetraError) as vertices:
+    assert extraction.simplified_points == 3
+    assert extraction.fragment.quality_warnings == ("VERTEX_COUNT_BELOW_EXPECTED",)
+    assert 0.99 <= extraction.area_ratio <= 1.01
+
+
+@pytest.mark.parametrize("n_points", [2, 5001])
+def test_runtime_rejects_hard_vertex_limits(
+    monkeypatch: pytest.MonkeyPatch, n_points: int
+) -> None:
+    angles = np.linspace(0.0, 2.0 * math.pi, n_points, endpoint=False)
+    simplified = np.column_stack((1100 + 800 * np.cos(angles), 1100 + 800 * np.sin(angles)))
+
+    def fake_simplify(
+        _contour: np.ndarray, *, dp_epsilon_mm: float, scale_mm_px: float
+    ) -> tuple[np.ndarray, float]:
+        return simplified, dp_epsilon_mm / scale_mm_px
+
+    monkeypatch.setattr("petra.segmentation.geometry.simplify_contour", fake_simplify)
+    with pytest.raises(PetraError) as rejected:
         extract_fragment_geometry(
-            processed_mask(square),
-            small_session,
+            processed_mask(triangle_mask()),
+            session_meta(),
             seg_model="chroma",
             seg_model_revision="opencv",
             seg_score=1.0,
             photo_path="photo.png",
             mask_path="mask.png",
         )
-    assert vertices.value.code in {ErrorCode.POLYGON_AREA_RATIO, ErrorCode.POLYGON_VERTEX_COUNT}
+    assert rejected.value.code == ErrorCode.POLYGON_VERTEX_COUNT
+    assert rejected.value.details == {"n_points": n_points, "minimum": 3, "maximum": 5000}
 
 
 def test_contour_input_guards_and_polygon_repair_paths() -> None:

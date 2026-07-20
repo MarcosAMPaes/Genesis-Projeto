@@ -21,6 +21,24 @@ from petra.contracts.base import (
 PositiveFloat = Annotated[float, Field(gt=0)]
 Probability = Annotated[float, Field(ge=0, le=1)]
 
+MIN_POLYGON_VERTICES = 3
+EXPECTED_MIN_POLYGON_VERTICES = 100
+EXPECTED_MAX_POLYGON_VERTICES = 1000
+MAX_POLYGON_VERTICES = 5000
+
+type GeometryQualityWarning = Literal[
+    "VERTEX_COUNT_BELOW_EXPECTED",
+    "VERTEX_COUNT_ABOVE_EXPECTED",
+]
+
+
+def vertex_count_quality_warnings(n_points: int) -> tuple[GeometryQualityWarning, ...]:
+    if n_points < EXPECTED_MIN_POLYGON_VERTICES:
+        return ("VERTEX_COUNT_BELOW_EXPECTED",)
+    if n_points > EXPECTED_MAX_POLYGON_VERTICES:
+        return ("VERTEX_COUNT_ABOVE_EXPECTED",)
+    return ()
+
 
 class ModelDescriptor(ContractModel):
     schema_version: Literal["1.0.0"] = SCHEMA_VERSION
@@ -96,10 +114,17 @@ class FragmentGeom(ContractModel):
     schema_version: Literal["1.0.0"] = SCHEMA_VERSION
     fragment_id: UlidString
     session_id: UlidString
-    polygon_mm: tuple[Point2D, ...] = Field(min_length=101, max_length=1001)
+    polygon_mm: tuple[Point2D, ...] = Field(
+        min_length=MIN_POLYGON_VERTICES + 1,
+        max_length=MAX_POLYGON_VERTICES + 1,
+    )
     area_mm2: PositiveFloat
     bbox_mm: BBox2D
-    n_points: Annotated[int, Field(ge=100, le=1000)]
+    n_points: Annotated[
+        int,
+        Field(ge=MIN_POLYGON_VERTICES, le=MAX_POLYGON_VERTICES),
+    ]
+    quality_warnings: tuple[GeometryQualityWarning, ...] = ()
     seg_model: str = Field(min_length=1)
     seg_model_revision: str = Field(min_length=1)
     seg_score: Probability
@@ -116,6 +141,12 @@ class FragmentGeom(ContractModel):
             raise ValueError("n_points must count vertices without the closing duplicate")
         if len(set(self.polygon_mm[:-1])) != self.n_points:
             raise ValueError("polygon_mm cannot contain duplicate vertices")
+        expected_warnings = vertex_count_quality_warnings(self.n_points)
+        if self.quality_warnings != expected_warnings:
+            raise ValueError(
+                "quality_warnings must match the polygon vertex count; "
+                f"expected {expected_warnings}"
+            )
 
         ring = LinearRing(self.polygon_mm)
         polygon = Polygon(ring)
