@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
@@ -69,7 +70,8 @@ def detect_charuco_pose(
     if len(charuco_ids) < MIN_CORNERS_PER_POSE:
         return None
 
-    object_points, image_points = board.matchImagePoints(charuco_corners, charuco_ids)
+    detected_corners = cast(Sequence[cv2.typing.MatLike], charuco_corners)
+    object_points, image_points = board.matchImagePoints(detected_corners, charuco_ids)
     if object_points is None or image_points is None:
         return None
     object_points_mm = np.asarray(object_points, dtype=np.float64).reshape(-1, 3)

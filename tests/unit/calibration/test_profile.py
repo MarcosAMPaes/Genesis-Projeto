@@ -200,6 +200,7 @@ def test_artifact_orchestration_tracks_exclusions_failures_and_success(
                 source=observation.source,
                 image_sha256=observation.image_sha256,
                 rms_px=0.1,
+                corners_used=len(observation.corners_px),
                 rvec=(0.0, 0.0, 0.0),
                 tvec=(0.0, 0.0, 800.0),
             )

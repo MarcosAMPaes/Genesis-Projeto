@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import pytest
 
+from petra.calibration.charuco import MIN_CORNERS_PER_POSE
 from petra.calibration.intrinsic import IntrinsicCalibrationResult, PoseCalibrationResult
 from petra.calibration.profile import build_profile, persist_profile
 from petra.calibration.rectify import CharucoBoardConfig
@@ -63,6 +64,7 @@ def _write_profile(root: Path) -> Path:
             source=f"pose-{index}.png",
             image_sha256=f"{index:064x}",
             rms_px=0.1,
+            corners_used=MIN_CORNERS_PER_POSE,
             rvec=(0.0, 0.0, 0.0),
             tvec=(0.0, 0.0, 800.0),
         )

@@ -10,6 +10,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from petra.calibration.charuco import MIN_CORNERS_PER_POSE
 from petra.calibration.intrinsic import IntrinsicCalibrationResult, PoseCalibrationResult
 from petra.calibration.parallax import (
     check_lidar_divergence,
@@ -128,6 +129,7 @@ def test_rectify_cli_writes_image_and_complete_session_meta(
             source=f"pose-{index}.png",
             image_sha256=f"{index:064x}",
             rms_px=0.1,
+            corners_used=MIN_CORNERS_PER_POSE,
             rvec=(0.0, 0.0, 0.0),
             tvec=(0.0, 0.0, 800.0),
         )
