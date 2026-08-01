@@ -15,10 +15,10 @@ from numpy.typing import NDArray
 from pydantic import Field
 from ulid import ULID
 
-from petra.calibration.checkerboard import (
-    CheckerboardConfig,
+from petra.calibration.board import CharucoBoardConfig
+from petra.calibration.charuco import (
     PoseObservation,
-    detect_checkerboard,
+    detect_charuco_pose,
 )
 from petra.calibration.intrinsic import IntrinsicCalibrationResult, calibrate_intrinsics
 from petra.contracts import (
@@ -208,7 +208,7 @@ def create_calibration_artifacts(
     report_path: Path,
     excluded_names: set[str],
 ) -> bool:
-    config = CheckerboardConfig.from_json(board_path)
+    config = CharucoBoardConfig.from_json(board_path)
     paths = sorted(
         path
         for path in image_dir.iterdir()
@@ -233,7 +233,7 @@ def create_calibration_artifacts(
         if image is None:
             failures.append(str(path))
             continue
-        observation = detect_checkerboard(
+        observation = detect_charuco_pose(
             cast(NDArray[np.uint8], image),
             config,
             source=str(path),
@@ -248,7 +248,7 @@ def create_calibration_artifacts(
     result: IntrinsicCalibrationResult | None = None
     error: PetraError | None = None
     try:
-        result = calibrate_intrinsics(observations, config)
+        result = calibrate_intrinsics(observations)
         if not result.accepted:
             error = PetraError(
                 ErrorCode.CALIB_RMS_REJECTED,

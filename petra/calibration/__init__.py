@@ -1,8 +1,10 @@
-from petra.calibration.checkerboard import (
-    CheckerboardConfig,
+from petra.calibration.board import CharucoBoardConfig
+from petra.calibration.charuco import (
+    MIN_CORNERS_PER_POSE,
     PoseObservation,
-    detect_checkerboard,
-    object_points,
+    board_object_points,
+    detect_charuco_pose,
+    is_planar_non_collinear,
 )
 from petra.calibration.intrinsic import (
     IntrinsicCalibrationResult,
@@ -27,7 +29,6 @@ from petra.calibration.profile import (
     verify_profile_hash,
 )
 from petra.calibration.rectify import (
-    CharucoBoardConfig,
     CharucoDetection,
     RectificationResult,
     RectifyConfig,
@@ -50,10 +51,10 @@ from petra.calibration.validation import (
 )
 
 __all__ = [
+    "MIN_CORNERS_PER_POSE",
     "CalibrationAttemptReport",
     "CharucoBoardConfig",
     "CharucoDetection",
-    "CheckerboardConfig",
     "DimensionMeasurement",
     "DimensionalValidationReport",
     "IntrinsicCalibrationResult",
@@ -66,6 +67,7 @@ __all__ = [
     "UndistortMaps",
     "UndistortedFrame",
     "Undistorter",
+    "board_object_points",
     "build_profile",
     "build_session_meta",
     "calibrate_intrinsics",
@@ -74,12 +76,12 @@ __all__ = [
     "correct_dimension_mm",
     "create_calibration_artifacts",
     "detect_charuco",
-    "detect_checkerboard",
+    "detect_charuco_pose",
     "homography_jacobian",
+    "is_planar_non_collinear",
     "load_measurements",
     "load_scales",
     "native_gsd_at",
-    "object_points",
     "parallax_factor",
     "persist_attempt_report",
     "persist_profile",

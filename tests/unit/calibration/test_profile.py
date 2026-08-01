@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import petra.calibration.profile as profile_module
-from petra.calibration.checkerboard import PoseObservation
+from petra.calibration.charuco import MIN_CORNERS_PER_POSE, PoseObservation
 from petra.calibration.intrinsic import IntrinsicCalibrationResult, PoseCalibrationResult
 from petra.calibration.profile import (
     build_profile,
@@ -29,6 +29,7 @@ def accepted_result(*, rms_px: float = 0.2) -> IntrinsicCalibrationResult:
             source=f"pose-{index}.png",
             image_sha256=f"{index:064x}",
             rms_px=0.1,
+            corners_used=MIN_CORNERS_PER_POSE,
             rvec=(0.0, 0.0, 0.0),
             tvec=(0.0, 0.0, 800.0),
         )
@@ -104,7 +105,15 @@ def test_cli_always_writes_rejection_report_for_insufficient_poses(
     images.mkdir()
     board = tmp_path / "board.json"
     board.write_text(
-        json.dumps({"columns": 9, "rows": 6, "square_size_mm": 25.0}),
+        json.dumps(
+            {
+                "squares_x": 7,
+                "squares_y": 9,
+                "square_length_mm": 38.0,
+                "marker_length_mm": 28.0,
+                "dictionary": "DICT_5X5_100",
+            }
+        ),
         encoding="utf-8",
     )
     bench = tmp_path / "bench.json"
@@ -152,7 +161,15 @@ def test_artifact_orchestration_tracks_exclusions_failures_and_success(
     (images / "invalid.png").write_text("not an image", encoding="utf-8")
     board = tmp_path / "board.json"
     board.write_text(
-        json.dumps({"columns": 9, "rows": 6, "square_size_mm": 25.0}),
+        json.dumps(
+            {
+                "squares_x": 7,
+                "squares_y": 9,
+                "square_length_mm": 38.0,
+                "marker_length_mm": 28.0,
+                "dictionary": "DICT_5X5_100",
+            }
+        ),
         encoding="utf-8",
     )
     bench = tmp_path / "bench.json"
@@ -172,13 +189,12 @@ def test_artifact_orchestration_tracks_exclusions_failures_and_success(
             source=source,
             image_sha256=image_sha256,
             image_size=(32, 32),
-            corners_px=np.zeros((54, 2), dtype=np.float64),
+            corners_px=np.zeros((MIN_CORNERS_PER_POSE, 2), dtype=np.float64),
+            object_points_mm=np.zeros((MIN_CORNERS_PER_POSE, 3), dtype=np.float64),
+            corner_ids=tuple(range(MIN_CORNERS_PER_POSE)),
         )
 
-    def fake_calibrate(
-        observations: list[PoseObservation], config: object
-    ) -> IntrinsicCalibrationResult:
-        del config
+    def fake_calibrate(observations: list[PoseObservation]) -> IntrinsicCalibrationResult:
         poses = tuple(
             PoseCalibrationResult(
                 source=observation.source,
@@ -197,7 +213,7 @@ def test_artifact_orchestration_tracks_exclusions_failures_and_success(
             poses=poses,
         )
 
-    monkeypatch.setattr(profile_module, "detect_checkerboard", fake_detect)
+    monkeypatch.setattr(profile_module, "detect_charuco_pose", fake_detect)
     monkeypatch.setattr(profile_module, "calibrate_intrinsics", fake_calibrate)
     profile_path = tmp_path / "profile.json"
     report_path = tmp_path / "report.json"

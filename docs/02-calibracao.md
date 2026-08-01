@@ -2,9 +2,28 @@
 
 Objetivo do estágio: transformar uma foto em uma **medição**. Saída: imagem fronto-paralela com escala mm/px conhecida, erro dimensional ≤ 2 mm (alvo 1 mm).
 
-## 2.1 Método de Zhang (calibração intrínseca)
+## 2.0 Padrão físico único — placa ChArUco
 
-Zhang (2000): a câmera observa um plano com padrão conhecido (tabuleiro de xadrez) em várias poses; cada pose dá uma homografia; o conjunto restringe os parâmetros intrínsecos. Solução fechada + refinamento não linear (Levenberg-Marquardt) minimizando erro de reprojeção.
+O projeto usa **uma única placa física** nas duas etapas (intrínseca e retificação de sessão): placa plástica adesivada 30×40 cm com ChArUco gerado por `cv2.aruco.CharucoBoard`.
+
+| Parâmetro | Valor | Config |
+|---|---|---|
+| Quadrados | 7 × 9 | `squares_x`, `squares_y` |
+| Lado do quadrado | **38,0 mm** (nominal) | `square_length_mm` |
+| Lado do marcador | **28,0 mm** (nominal) | `marker_length_mm` |
+| Dicionário | `DICT_5X5_100` (IDs 0–30) | `dictionary` |
+| Cantos internos | 48 | derivado |
+| Área impressa | 266 × 342 mm | derivado |
+
+Config: [`config/boards/charuco-a3-7x9-38mm.json`](../config/boards/charuco-a3-7x9-38mm.json) — mesmo arquivo para `calibrate create`, `calibrate rectify` e `process-session`.
+
+> **Obrigatório antes da primeira calibração:** medir com paquímetro o lado real de um quadrado impresso (média de 3 quadrados distantes entre si) e, se divergir do nominal, corrigir `square_length_mm` e `marker_length_mm` no JSON. A arte é A3 (297×420 mm) e a placa é 300×400 mm — qualquer reescala da gráfica propaga **erro de escala direto para as medições em mm**. Registrar a medição no dossiê da bancada.
+
+Por que ChArUco também na intrínseca: os cantos de tabuleiro dão precisão subpixel, os marcadores ArUco dão identidade a cada canto — logo, **poses parciais são utilizáveis** (o padrão pode sair pela borda do quadro), o que é essencial para cobrir cantos do campo de visão, onde a distorção radial é maior. Recomendação do próprio OpenCV para medição de alta precisão.
+
+## 2.1 Método de Zhang (calibração intrínseca sobre ChArUco)
+
+Zhang (2000): a câmera observa um plano com padrão conhecido em várias poses; cada pose dá uma homografia; o conjunto restringe os parâmetros intrínsecos. Solução fechada + refinamento não linear (Levenberg-Marquardt) minimizando erro de reprojeção.
 
 Parâmetros estimados:
 
@@ -15,24 +34,29 @@ Parâmetros estimados:
 ### Implementação OpenCV
 
 ```python
-# 1. Detecção — usar a variante SB, mais robusta a iluminação/ângulo
-ok, corners = cv2.findChessboardCornersSB(gray, (cols, rows), flags=cv2.CALIB_CB_EXHAUSTIVE | cv2.CALIB_CB_ACCURACY)
-# (fallback clássico: findChessboardCorners + cornerSubPix com critério de término apertado)
+# 1. Detecção do tabuleiro ChArUco (cantos subpixel + IDs)
+detector = cv2.aruco.CharucoDetector(board)
+charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
 
-# 2. Calibração
-rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(obj_pts, img_pts, gray.shape[::-1], None, None)
+# 2. Correspondência 3D↔2D da vista (aceita vista parcial)
+object_points, image_points = board.matchImagePoints(charuco_corners, charuco_ids)
 
-# 3. Correção (mapa pré-computado uma vez por perfil, remap por imagem)
+# 3. Calibração com listas por pose (contagem de pontos variável)
+rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(obj_pts, img_pts, size, None, None,
+                                                 flags=cv2.CALIB_FIX_K4|cv2.CALIB_FIX_K5|cv2.CALIB_FIX_K6)
+
+# 4. Correção (mapa pré-computado uma vez por perfil, remap por imagem)
 map1, map2 = cv2.initUndistortRectifyMap(K, dist, None, K_new, size, cv2.CV_16SC2)
 undistorted = cv2.remap(img, map1, map2, cv2.INTER_LINEAR)
 ```
 
 ### Protocolo de captura da calibração
 
-1. ≥ 20 poses do tabuleiro; inclinações variadas (±30–45°) e posições cobrindo **todo o campo de visão, inclusive cantos** (é onde a distorção radial é maior);
-2. Tabuleiro plano e rígido (impresso colado em superfície plana — empenamento arruína a calibração); quadrados de dimensão certificada (kit orçado);
+1. ≥ 20 poses válidas; inclinações variadas (±30–45°) e posições cobrindo **todo o campo de visão, inclusive cantos** (é onde a distorção radial é maior) — vistas parciais são bem-vindas e contam, desde que exponham ≥ 12 cantos;
+2. Placa plana e rígida — a placa adesivada resolve isso; empenamento arruína a calibração;
 3. Foco e zoom **travados** durante toda a sessão — mudou foco, recalibrou;
-4. Aceite: RMS < 0,5 px; inspecionar resíduos por imagem (uma pose ruim contamina o conjunto — descartar outliers e recalibrar).
+4. Poses degeneradas (cantos colineares) são descartadas automaticamente pelo detector;
+5. Aceite: RMS < 0,5 px; inspecionar resíduos por pose (uma pose ruim contamina o conjunto — excluir explicitamente via `--exclude` e recalibrar; nunca há remoção silenciosa).
 
 ## 2.2 Especificidades do iPhone 17 Pro (aparelho real do projeto)
 

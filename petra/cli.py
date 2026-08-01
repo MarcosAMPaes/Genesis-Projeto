@@ -397,9 +397,11 @@ def build_parser() -> argparse.ArgumentParser:
     modules = parser.add_subparsers(dest="module")
     calibrate = modules.add_parser("calibrate", help="calibracao geometrica")
     calibrate_commands = calibrate.add_subparsers(dest="calibrate_command")
-    create = calibrate_commands.add_parser("create", help="cria perfil intrinseco")
+    create = calibrate_commands.add_parser(
+        "create", help="cria perfil intrinseco a partir de poses ChArUco"
+    )
     create.add_argument("--images", required=True)
-    create.add_argument("--board", required=True)
+    create.add_argument("--board", required=True, help="config da placa ChArUco (mm medidos)")
     create.add_argument("--device", required=True)
     create.add_argument("--lens", required=True)
     create.add_argument("--z-mm-lidar", required=True, type=float)
@@ -411,7 +413,7 @@ def build_parser() -> argparse.ArgumentParser:
     rectify = calibrate_commands.add_parser("rectify", help="retifica uma captura")
     rectify.add_argument("--image", required=True)
     rectify.add_argument("--profile", required=True)
-    rectify.add_argument("--board", required=True)
+    rectify.add_argument("--board", required=True, help="mesma config ChArUco da calibracao")
     rectify.add_argument("--config", required=True)
     rectify.add_argument("--session-id")
     rectify.add_argument("--thickness-mm", required=True, type=float)

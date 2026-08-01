@@ -7,8 +7,11 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from petra.calibration.checkerboard import CheckerboardConfig, PoseObservation, object_points
+from petra.calibration.charuco import MIN_CORNERS_PER_POSE, PoseObservation
 from petra.errors import ErrorCode, PetraError
+
+MIN_POSES = 20
+MAX_ACCEPTED_RMS_PX = 0.5
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,6 +19,7 @@ class PoseCalibrationResult:
     source: str
     image_sha256: str
     rms_px: float
+    corners_used: int
     rvec: tuple[float, float, float]
     tvec: tuple[float, float, float]
 
@@ -30,7 +34,7 @@ class IntrinsicCalibrationResult:
 
     @property
     def accepted(self) -> bool:
-        return len(self.poses) >= 20 and self.rms_px < 0.5
+        return len(self.poses) >= MIN_POSES and self.rms_px < MAX_ACCEPTED_RMS_PX
 
 
 def _vector3(vector: Any) -> tuple[float, float, float]:
@@ -38,15 +42,13 @@ def _vector3(vector: Any) -> tuple[float, float, float]:
     return float(flat[0]), float(flat[1]), float(flat[2])
 
 
-def calibrate_intrinsics(
-    observations: list[PoseObservation],
-    config: CheckerboardConfig,
-) -> IntrinsicCalibrationResult:
-    if len(observations) < 20:
+def calibrate_intrinsics(observations: list[PoseObservation]) -> IntrinsicCalibrationResult:
+    """Zhang intrinsic calibration over ChArUco poses, tolerating partial views."""
+    if len(observations) < MIN_POSES:
         raise PetraError(
             ErrorCode.CALIB_INSUFFICIENT_POSES,
-            "at least 20 valid checkerboard poses are required",
-            {"valid_poses": len(observations), "required": 20},
+            f"at least {MIN_POSES} valid ChArUco poses are required",
+            {"valid_poses": len(observations), "required": MIN_POSES},
         )
 
     image_sizes = {observation.image_size for observation in observations}
@@ -57,17 +59,20 @@ def calibrate_intrinsics(
             {"image_sizes": sorted(image_sizes)},
         )
     image_size = observations[0].image_size
-    expected_points = config.rows * config.columns
     for observation in observations:
-        if observation.corners_px.shape != (expected_points, 2):
+        if len(observation.corners_px) < MIN_CORNERS_PER_POSE:
             raise ValueError(
-                f"{observation.source} has {len(observation.corners_px)} corners; "
-                f"expected {expected_points}"
+                f"{observation.source} exposes {len(observation.corners_px)} corners; "
+                f"at least {MIN_CORNERS_PER_POSE} are required"
             )
 
-    board_points = object_points(config).astype(np.float32)
-    object_point_sets = [board_points.copy() for _ in observations]
-    image_point_sets = [observation.corners_px.astype(np.float32) for observation in observations]
+    object_point_sets = [
+        observation.object_points_mm.astype(np.float32).reshape(-1, 1, 3)
+        for observation in observations
+    ]
+    image_point_sets = [
+        observation.corners_px.astype(np.float32).reshape(-1, 1, 2) for observation in observations
+    ]
     flags = cv2.CALIB_FIX_K4 | cv2.CALIB_FIX_K5 | cv2.CALIB_FIX_K6
     rms, camera_matrix, distortion, rvecs, tvecs = cv2.calibrateCamera(
         object_point_sets,
@@ -83,7 +88,7 @@ def calibrate_intrinsics(
     pose_results: list[PoseCalibrationResult] = []
     for observation, rvec, tvec in zip(observations, rvecs, tvecs, strict=True):
         projected, _ = cv2.projectPoints(
-            board_points,
+            observation.object_points_mm.astype(np.float32),
             rvec,
             tvec,
             camera_matrix,
@@ -96,6 +101,7 @@ def calibrate_intrinsics(
                 source=observation.source,
                 image_sha256=observation.image_sha256,
                 rms_px=pose_rms,
+                corners_used=len(observation.corners_px),
                 rvec=_vector3(rvec),
                 tvec=_vector3(tvec),
             )

@@ -57,7 +57,7 @@ Convenções globais: unidade canônica **mm** (float64) a partir da saída de A
 
 | | Contrato |
 |---|---|
-| **Entrada (calibração)** | ≥ 20 fotos do tabuleiro (mesma lente/foco); dimensão certificada do quadrado (mm) |
+| **Entrada (calibração)** | ≥ 20 fotos da **placa ChArUco** (mesma lente/foco/resolução), cada pose com ≥ 12 cantos internos detectados — vistas parciais são válidas; config do board com a dimensão **medida** do quadrado (doc 02 §2.0) |
 | **Saída (calibração)** | `calib_profile.json`: `{id, device, lens, K[3][3], dist[5], rms_px, img_size, z_mm_lidar, created_at, bench_config_hash}` — **rejeitar se** `rms_px ≥ 0.5` |
 | **Entrada (sessão)** | Fotos brutas + `calib_profile_id` + espessura(s) declarada(s) da sessão + placa ArUco visível |
 | **Saída (sessão)** | Por foto: imagem retificada fronto-paralela + `session_meta.json`: `{session_id, calib_profile_id, scale_mm_px, homography[3][3], aruco_ids[], thickness_mm, background, residual_check_mm}` |
